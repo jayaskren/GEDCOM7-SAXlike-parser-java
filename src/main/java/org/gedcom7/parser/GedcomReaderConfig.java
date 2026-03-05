@@ -1,5 +1,9 @@
 package org.gedcom7.parser;
 
+import org.gedcom7.parser.internal.AllAtEscapeStrategy;
+import org.gedcom7.parser.internal.BomDetectingDecoder;
+import org.gedcom7.parser.internal.ContConcAssembler;
+
 /**
  * Immutable configuration for {@link GedcomReader}.
  * Use {@link #gedcom7()} or {@link #gedcom7Strict()} factory
@@ -14,6 +18,7 @@ public final class GedcomReaderConfig {
     private final int maxNestingDepth;
     private final int maxLineLength;
     private final boolean structureValidation;
+    private final boolean autoDetect;
     final Object inputDecoder;
     final Object payloadAssembler;
     final Object atEscapeStrategy;
@@ -23,6 +28,7 @@ public final class GedcomReaderConfig {
         this.maxNestingDepth = builder.maxNestingDepth;
         this.maxLineLength = builder.maxLineLength;
         this.structureValidation = builder.structureValidation;
+        this.autoDetect = builder.autoDetect;
         this.inputDecoder = builder.inputDecoder;
         this.payloadAssembler = builder.payloadAssembler;
         this.atEscapeStrategy = builder.atEscapeStrategy;
@@ -38,10 +44,64 @@ public final class GedcomReaderConfig {
         return new Builder().strict(true).build();
     }
 
+    /**
+     * GEDCOM 5.5.5 configuration (lenient mode).
+     * Uses BOM-detecting decoder, CONT+CONC assembler,
+     * and all-@@ escape strategy.
+     */
+    public static GedcomReaderConfig gedcom555() {
+        return new Builder()
+                .inputDecoder(new BomDetectingDecoder())
+                .payloadAssembler(new ContConcAssembler())
+                .atEscapeStrategy(new AllAtEscapeStrategy())
+                .build();
+    }
+
+    /**
+     * GEDCOM 5.5.5 strict configuration.
+     * Same strategies as {@link #gedcom555()}, plus strict mode
+     * and maxLineLength of 255.
+     */
+    public static GedcomReaderConfig gedcom555Strict() {
+        return new Builder()
+                .strict(true)
+                .maxLineLength(255)
+                .inputDecoder(new BomDetectingDecoder())
+                .payloadAssembler(new ContConcAssembler())
+                .atEscapeStrategy(new AllAtEscapeStrategy())
+                .build();
+    }
+
+    /**
+     * Auto-detecting configuration (lenient mode).
+     * Uses BOM-detecting decoder. After scanning HEAD,
+     * automatically selects GEDCOM 7 or 5.5.5 strategies
+     * based on HEAD.GEDC.VERS.
+     */
+    public static GedcomReaderConfig autoDetect() {
+        return new Builder()
+                .autoDetect(true)
+                .inputDecoder(new BomDetectingDecoder())
+                .build();
+    }
+
+    /**
+     * Auto-detecting strict configuration.
+     * Same as {@link #autoDetect()} with strict mode enabled.
+     */
+    public static GedcomReaderConfig autoDetectStrict() {
+        return new Builder()
+                .strict(true)
+                .autoDetect(true)
+                .inputDecoder(new BomDetectingDecoder())
+                .build();
+    }
+
     public boolean isStrict() { return strict; }
     public int getMaxNestingDepth() { return maxNestingDepth; }
     public int getMaxLineLength() { return maxLineLength; }
     public boolean isStructureValidationEnabled() { return structureValidation; }
+    public boolean isAutoDetect() { return autoDetect; }
     Object getInputDecoderOrNull() { return inputDecoder; }
     Object getPayloadAssemblerOrNull() { return payloadAssembler; }
     Object getAtEscapeStrategyOrNull() { return atEscapeStrategy; }
@@ -53,6 +113,7 @@ public final class GedcomReaderConfig {
                 .maxNestingDepth(maxNestingDepth)
                 .maxLineLength(maxLineLength)
                 .structureValidation(structureValidation)
+                .autoDetect(autoDetect)
                 .inputDecoder(inputDecoder)
                 .payloadAssembler(payloadAssembler)
                 .atEscapeStrategy(atEscapeStrategy);
@@ -63,6 +124,7 @@ public final class GedcomReaderConfig {
         private int maxNestingDepth = DEFAULT_MAX_NESTING_DEPTH;
         private int maxLineLength = DEFAULT_MAX_LINE_LENGTH;
         private boolean structureValidation = false;
+        private boolean autoDetect = false;
         Object inputDecoder;
         Object payloadAssembler;
         Object atEscapeStrategy;
@@ -86,6 +148,15 @@ public final class GedcomReaderConfig {
 
         public Builder structureValidation(boolean enabled) {
             this.structureValidation = enabled;
+            return this;
+        }
+
+        /**
+         * Sets the auto-detect flag. When true, the parser reads
+         * HEAD.GEDC.VERS and selects appropriate strategies automatically.
+         */
+        public Builder autoDetect(boolean autoDetect) {
+            this.autoDetect = autoDetect;
             return this;
         }
 

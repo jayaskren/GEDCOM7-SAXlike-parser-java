@@ -19,11 +19,13 @@ public interface PayloadAssembler {
     boolean isPseudoStructure(String tag);
 
     /**
-     * Assembles the continuation value onto the existing payload.
+     * Appends the continuation value onto the payload buffer.
+     * The initial value (from the first line) should already be in the buffer
+     * before this method is called for the first continuation line.
      *
-     * @param existing the current payload (may be null)
+     * @param payload the buffer accumulating the payload
      * @param continuationValue the value from the continuation line (may be null)
-     * @return the assembled payload
+     * @param tag the pseudo-structure tag (e.g., "CONT" or "CONC")
      */
-    String assemblePayload(String existing, String continuationValue);
+    void appendPayload(StringBuilder payload, String continuationValue, String tag);
 }

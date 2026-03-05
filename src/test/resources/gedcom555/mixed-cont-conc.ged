@@ -1,0 +1,14 @@
+﻿0 HEAD
+1 SOUR TEST_SYSTEM
+1 GEDC
+2 VERS 5.5.5
+2 FORM LINEAGE-LINKED
+1 CHAR UTF-8
+0 @I1@ INDI
+1 NAME Test /Person/
+1 NOTE Line one part o
+2 CONC ne complete.
+2 CONT Line two.
+2 CONT Line three pa
+2 CONC rt complete.
+0 TRLR

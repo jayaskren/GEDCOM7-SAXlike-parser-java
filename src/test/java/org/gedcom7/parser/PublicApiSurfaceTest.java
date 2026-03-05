@@ -11,7 +11,30 @@ import static org.junit.jupiter.api.Assertions.*;
 class PublicApiSurfaceTest {
 
     @Test
-    void publicTypeCountUnder15() {
+    void newFactoryMethodsExist() {
+        // Verify new factory methods compile and return non-null
+        assertNotNull(GedcomReaderConfig.gedcom555());
+        assertNotNull(GedcomReaderConfig.gedcom555Strict());
+        assertNotNull(GedcomReaderConfig.autoDetect());
+        assertNotNull(GedcomReaderConfig.autoDetectStrict());
+    }
+
+    @Test
+    void configAutoDetectAccessor() {
+        assertFalse(GedcomReaderConfig.gedcom7().isAutoDetect());
+        assertTrue(GedcomReaderConfig.autoDetect().isAutoDetect());
+    }
+
+    @Test
+    void headerInfoCharacterEncodingAccessor() {
+        // Just verify the method exists at compile time
+        GedcomHeaderInfo info = new GedcomHeaderInfo(
+                new GedcomVersion(7, 0), null, null, null, null, null);
+        assertNull(info.getCharacterEncoding());
+    }
+
+    @Test
+    void publicTypeCountUnder20() {
         // Public API types in org.gedcom7.parser:
         // 1. GedcomReader
         // 2. GedcomHandler
@@ -20,16 +43,17 @@ class PublicApiSurfaceTest {
         // 5. GedcomVersion
         // 6. GedcomParseError (+ Severity as inner enum)
         // 7. GedcomFatalException
+        // 8. GedzipReader
         //
         // Public API types in org.gedcom7.parser.datatype:
-        // 8. GedcomDataTypes
-        // 9. GedcomDate
-        // 10. GedcomDateRange
-        // 11. GedcomDatePeriod
-        // 12. GedcomTime
-        // 13. GedcomAge
-        // 14. GedcomPersonalName
-        // 15. GedcomCoordinate
+        // 9. GedcomDataTypes
+        // 10. GedcomDate
+        // 11. GedcomDateRange
+        // 12. GedcomDatePeriod
+        // 13. GedcomTime
+        // 14. GedcomAge
+        // 15. GedcomPersonalName
+        // 16. GedcomCoordinate
 
         // Verify each exists as a compile-time check
         assertNotNull(GedcomReader.class);
@@ -39,13 +63,13 @@ class PublicApiSurfaceTest {
         assertNotNull(GedcomVersion.class);
         assertNotNull(GedcomParseError.class);
         assertNotNull(GedcomFatalException.class);
+        assertNotNull(GedzipReader.class);
 
-        // Total: 7 core + 8 datatype = 15 public types
-        // This is at the boundary but acceptable; inner classes
-        // (Builder, Severity) don't count as separate public types
-        int coreTypes = 7;
+        // Total: 8 core + 8 datatype = 16 public types
+        // GedzipReader is the one addition beyond the original 15
+        int coreTypes = 8;
         int datatypeTypes = 8;
-        assertTrue(coreTypes + datatypeTypes <= 15,
-                "Public API surface should be <= 15 types, got " + (coreTypes + datatypeTypes));
+        assertTrue(coreTypes + datatypeTypes <= 20,
+                "Public API surface should be <= 20 types, got " + (coreTypes + datatypeTypes));
     }
 }

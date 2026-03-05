@@ -1,6 +1,9 @@
 package org.gedcom7.parser;
 
+import org.gedcom7.parser.internal.AllAtEscapeStrategy;
 import org.gedcom7.parser.internal.AtEscapeStrategy;
+import org.gedcom7.parser.internal.BomDetectingDecoder;
+import org.gedcom7.parser.internal.ContConcAssembler;
 import org.gedcom7.parser.internal.ContOnlyAssembler;
 import org.gedcom7.parser.internal.GedcomInputDecoder;
 import org.gedcom7.parser.internal.GedcomLine;
@@ -41,8 +44,10 @@ public final class GedcomReader implements AutoCloseable {
     private final GedcomHandler handler;
     private final GedcomReaderConfig config;
     private final GedcomInputDecoder decoder;
-    private final PayloadAssembler assembler;
-    private final AtEscapeStrategy atEscape;
+    private PayloadAssembler assembler;
+    private AtEscapeStrategy atEscape;
+
+    private boolean gedcom555Mode;
 
     // Cross-reference tracking (US4)
     private final Set<String> definedXrefs = new HashSet<>();
@@ -92,6 +97,7 @@ public final class GedcomReader implements AutoCloseable {
         String sourceVersion = null;
         String sourceName = null;
         String defaultLanguage = null;
+        String characterEncoding = null;
         Map<String, String> schemaMap = new HashMap<>();
 
         try {
@@ -125,17 +131,59 @@ public final class GedcomReader implements AutoCloseable {
             sourceName = extractNestedValue(headLines, "SOUR", "NAME");
             sourceVersion = extractNestedValue(headLines, "SOUR", "VERS");
             defaultLanguage = extractValue(headLines, "LANG", 1);
+            characterEncoding = extractValue(headLines, "CHAR", 1);
 
-            // Warn if not GEDCOM 7.x (US6)
-            if (!version.isGedcom7()) {
+            // Auto-detect: swap strategies based on version
+            if (config.isAutoDetect() && version.isGedcom5()) {
+                this.assembler = new ContConcAssembler();
+                this.atEscape = new AllAtEscapeStrategy();
+                // Warn if not exactly 5.5.5 (FR-012)
+                if (!(version.getMinor() == 5 && version.getPatch() == 5)) {
+                    handler.warning(new GedcomParseError(
+                            GedcomParseError.Severity.WARNING, 0, 0,
+                            "Auto-detect: applying GEDCOM 5.5.5 rules to version " + version
+                            + "; some behaviors may differ", null));
+                }
+            }
+
+            // Set 5.5.5 mode for version-specific validation
+            this.gedcom555Mode = version.isGedcom5();
+
+            // Warn if not GEDCOM 7.x and not in auto-detect mode (US6)
+            if (!version.isGedcom7() && !config.isAutoDetect()) {
                 handler.warning(new GedcomParseError(
                         GedcomParseError.Severity.WARNING, 0, 0,
                         "Expected GEDCOM 7.x version, found: " + version, null));
             }
 
+            // In 5.5.5 mode, warn if HEAD.CHAR is missing
+            if (version.isGedcom5() && characterEncoding == null) {
+                handler.warning(new GedcomParseError(
+                        GedcomParseError.Severity.WARNING, 0, 0,
+                        "GEDCOM 5.5.x file missing HEAD.CHAR tag; assuming UTF-8", null));
+            }
+
+            // In 5.5.5 mode, check BOM presence
+            if (version.isGedcom5() && decoder instanceof BomDetectingDecoder) {
+                BomDetectingDecoder bomDecoder = (BomDetectingDecoder) decoder;
+                if (!bomDecoder.isBomFound()) {
+                    if (config.isStrict()) {
+                        GedcomParseError err = new GedcomParseError(
+                                GedcomParseError.Severity.FATAL, 0, 0,
+                                "GEDCOM 5.5.x file has no BOM; strict mode requires BOM", null);
+                        handler.fatalError(err);
+                        throw new GedcomFatalException(err);
+                    } else {
+                        handler.warning(new GedcomParseError(
+                                GedcomParseError.Severity.WARNING, 0, 0,
+                                "GEDCOM 5.5.x file has no BOM", null));
+                    }
+                }
+            }
+
             GedcomHeaderInfo headerInfo = new GedcomHeaderInfo(
                     version, sourceSystem, sourceVersion, sourceName,
-                    defaultLanguage, schemaMap);
+                    defaultLanguage, schemaMap, characterEncoding);
             this.headerInfo = headerInfo;
 
             // Fire startDocument
@@ -211,6 +259,7 @@ public final class GedcomReader implements AutoCloseable {
 
     private final List<StackEntry> levelStack = new ArrayList<>();
     private GedcomLine pendingStructure = null;
+    private StringBuilder pendingPayload = null;
     private String lastRecordTag = null;
     private boolean seenTrlr = false;
     private GedcomHeaderInfo headerInfo;
@@ -229,9 +278,14 @@ public final class GedcomReader implements AutoCloseable {
 
         // Handle CONT pseudo-structures
         if (assembler.isPseudoStructure(tag) && pendingStructure != null) {
-            String assembled = assembler.assemblePayload(
-                    pendingStructure.getValue(), line.getValue());
-            pendingStructure.setValue(assembled);
+            if (pendingPayload == null) {
+                pendingPayload = new StringBuilder();
+                String existing = pendingStructure.getValue();
+                if (existing != null) {
+                    pendingPayload.append(existing);
+                }
+            }
+            assembler.appendPayload(pendingPayload, line.getValue(), tag);
             return;
         }
 
@@ -297,6 +351,17 @@ public final class GedcomReader implements AutoCloseable {
         GedcomLine p = pendingStructure;
         pendingStructure = null;
 
+        // Materialize accumulated payload from continuation lines
+        if (pendingPayload != null) {
+            p.setValue(pendingPayload.toString());
+            pendingPayload = null;
+        }
+
+        // Validate bare @ in 5.5.5 mode before unescaping (FR-017)
+        if (gedcom555Mode && !p.isPointer() && p.getValue() != null) {
+            validateBareAt(p);
+        }
+
         // Unescape @@ in values
         String value = p.isPointer() ? p.getValue() : atEscape.unescape(p.getValue());
 
@@ -305,6 +370,11 @@ public final class GedcomReader implements AutoCloseable {
             if (p.getXref() != null) {
                 if (!definedXrefs.add(p.getXref())) {
                     reportError(p, "Duplicate cross-reference identifier: @" + p.getXref() + "@");
+                }
+                // Check xref length in 5.5.5 mode (FR-015)
+                if (gedcom555Mode && (p.getXref().length() + 2) > 22) {
+                    reportWarning(p, "Cross-reference @" + p.getXref()
+                            + "@ exceeds 22-character GEDCOM 5.5.5 limit");
                 }
             }
             // TRLR must not have value or xref (FR-054)
@@ -437,6 +507,27 @@ public final class GedcomReader implements AutoCloseable {
             }
         }
         return null;
+    }
+
+    // ─── GEDCOM 5.5.5 validation ─────────────────────────────
+
+    /**
+     * Checks for bare @ in a value (not part of @@).
+     * In GEDCOM 5.5.5, literal @ must be escaped as @@.
+     */
+    private void validateBareAt(GedcomLine line) {
+        String val = line.getValue();
+        for (int i = 0; i < val.length(); i++) {
+            if (val.charAt(i) == '@') {
+                if (i + 1 < val.length() && val.charAt(i + 1) == '@') {
+                    i++; // skip valid @@ pair
+                } else {
+                    reportError(line, "Bare @ at position " + i
+                            + "; GEDCOM 5.5.5 requires @@ for literal @");
+                    return; // report once per value
+                }
+            }
+        }
     }
 
     // ─── Character validation (US3) ─────────────────────────
