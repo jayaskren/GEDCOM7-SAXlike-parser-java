@@ -18,13 +18,31 @@ public final class GedcomHeaderInfo {
     private final String sourceName;
     private final String defaultLanguage;
     private final Map<String, String> schemaMap;
+    private final String characterEncoding;
 
+    /** Backward-compatible 6-parameter constructor (characterEncoding defaults to null). */
     public GedcomHeaderInfo(GedcomVersion version,
                             String sourceSystem,
                             String sourceVersion,
                             String sourceName,
                             String defaultLanguage,
                             Map<String, String> schemaMap) {
+        this(version, sourceSystem, sourceVersion, sourceName,
+                defaultLanguage, schemaMap, null);
+    }
+
+    /**
+     * Full constructor including character encoding from HEAD.CHAR.
+     *
+     * @param characterEncoding the HEAD.CHAR value (e.g., "UTF-8", "UNICODE"), or null for GEDCOM 7
+     */
+    public GedcomHeaderInfo(GedcomVersion version,
+                            String sourceSystem,
+                            String sourceVersion,
+                            String sourceName,
+                            String defaultLanguage,
+                            Map<String, String> schemaMap,
+                            String characterEncoding) {
         this.version = Objects.requireNonNull(version, "version");
         this.sourceSystem = sourceSystem;
         this.sourceVersion = sourceVersion;
@@ -33,6 +51,7 @@ public final class GedcomHeaderInfo {
         this.schemaMap = schemaMap != null
                 ? Collections.unmodifiableMap(schemaMap)
                 : Collections.emptyMap();
+        this.characterEncoding = characterEncoding;
     }
 
     public GedcomVersion getVersion() { return version; }
@@ -47,10 +66,18 @@ public final class GedcomHeaderInfo {
      */
     public Map<String, String> getSchemaMap() { return schemaMap; }
 
+    /**
+     * Returns the character encoding declared in HEAD.CHAR,
+     * or null if not present (GEDCOM 7 files do not use HEAD.CHAR).
+     * Typical values: "UTF-8", "UNICODE".
+     */
+    public String getCharacterEncoding() { return characterEncoding; }
+
     @Override
     public String toString() {
         return "GedcomHeaderInfo{version=" + version
                 + ", sourceSystem=" + sourceSystem
+                + ", characterEncoding=" + characterEncoding
                 + ", schemaMap=" + schemaMap + "}";
     }
 
@@ -64,12 +91,13 @@ public final class GedcomHeaderInfo {
                 && Objects.equals(sourceVersion, that.sourceVersion)
                 && Objects.equals(sourceName, that.sourceName)
                 && Objects.equals(defaultLanguage, that.defaultLanguage)
-                && schemaMap.equals(that.schemaMap);
+                && schemaMap.equals(that.schemaMap)
+                && Objects.equals(characterEncoding, that.characterEncoding);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(version, sourceSystem, sourceVersion,
-                sourceName, defaultLanguage, schemaMap);
+                sourceName, defaultLanguage, schemaMap, characterEncoding);
     }
 }

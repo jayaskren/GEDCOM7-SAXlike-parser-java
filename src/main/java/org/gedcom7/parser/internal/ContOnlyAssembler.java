@@ -13,15 +13,10 @@ public final class ContOnlyAssembler implements PayloadAssembler {
     }
 
     @Override
-    public String assemblePayload(String existing, String continuationValue) {
-        StringBuilder sb = new StringBuilder();
-        if (existing != null) {
-            sb.append(existing);
-        }
-        sb.append('\n');
+    public void appendPayload(StringBuilder payload, String continuationValue, String tag) {
+        payload.append('\n');
         if (continuationValue != null) {
-            sb.append(continuationValue);
+            payload.append(continuationValue);
         }
-        return sb.toString();
     }
 }
