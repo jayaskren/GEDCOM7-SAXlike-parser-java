@@ -1,0 +1,12 @@
+0 HEAD
+1 GEDC
+2 VERS 7.0
+1 SCHMA
+2 TAG _CUSTOM https://example.com/custom
+2 TAG _OTHER https://example.com/other
+0 @I1@ INDI
+1 NAME John /Doe/
+1 _CUSTOM some value
+1 _OTHER another
+1 _UNDOCUMENTED mystery
+0 TRLR
