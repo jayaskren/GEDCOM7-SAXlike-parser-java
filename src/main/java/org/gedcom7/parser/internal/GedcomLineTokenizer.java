@@ -134,7 +134,12 @@ public final class GedcomLineTokenizer {
             line.setTag("");
             return;
         }
-        line.setLevel(Integer.parseInt(buf.substring(levelStart, pos)));
+        try {
+            line.setLevel(Integer.parseInt(buf.substring(levelStart, pos)));
+        } catch (NumberFormatException e) {
+            line.setTag("");
+            return;
+        }
 
         // Expect delimiter (space)
         if (pos >= len || buf.charAt(pos) != ' ') {

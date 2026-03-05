@@ -28,6 +28,7 @@ import java.util.zip.*;
 public final class GedzipReader implements AutoCloseable {
 
     private static final String GEDCOM_ENTRY_NAME = "gedcom.ged";
+    private static final int MAX_ENTRIES = 100_000;
 
     private final ZipFile zipFile;
     private final ZipEntry gedcomEntry;
@@ -73,7 +74,8 @@ public final class GedzipReader implements AutoCloseable {
      */
     public InputStream getEntry(String path) {
         if (path == null) return null;
-        String decoded = URLDecoder.decode(path, StandardCharsets.UTF_8);
+        String decoded = sanitizePath(URLDecoder.decode(path, StandardCharsets.UTF_8));
+        if (decoded == null) return null;
         ZipEntry entry = zipFile.getEntry(decoded);
         if (entry == null) return null;
         try {
@@ -89,7 +91,8 @@ public final class GedzipReader implements AutoCloseable {
      */
     public boolean hasEntry(String path) {
         if (path == null) return false;
-        String decoded = URLDecoder.decode(path, StandardCharsets.UTF_8);
+        String decoded = sanitizePath(URLDecoder.decode(path, StandardCharsets.UTF_8));
+        if (decoded == null) return false;
         return zipFile.getEntry(decoded) != null;
     }
 
@@ -103,6 +106,10 @@ public final class GedzipReader implements AutoCloseable {
         Enumeration<? extends ZipEntry> entries = zipFile.entries();
         while (entries.hasMoreElements()) {
             names.add(entries.nextElement().getName());
+            if (names.size() > MAX_ENTRIES) {
+                throw new IllegalStateException(
+                        "Archive contains more than " + MAX_ENTRIES + " entries");
+            }
         }
         return Collections.unmodifiableSet(names);
     }
@@ -118,6 +125,17 @@ public final class GedzipReader implements AutoCloseable {
         if (path == null) return false;
         return path.startsWith("http://") || path.startsWith("https://")
                 || path.startsWith("ftp://") || path.startsWith("ftps://");
+    }
+
+    private static String sanitizePath(String decoded) {
+        if (decoded == null) return null;
+        String normalized = decoded.replace('\\', '/');
+        if (normalized.startsWith("/")
+                || normalized.contains("../")
+                || normalized.equals("..")) {
+            return null;
+        }
+        return decoded;
     }
 
     @Override
