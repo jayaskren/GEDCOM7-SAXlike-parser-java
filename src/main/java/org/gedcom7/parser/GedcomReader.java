@@ -40,6 +40,8 @@ import java.util.Set;
  */
 public final class GedcomReader implements AutoCloseable {
 
+    private static final int MAX_HEAD_LINES = 10_000;
+
     private final InputStream input;
     private final GedcomHandler handler;
     private final GedcomReaderConfig config;
@@ -52,6 +54,7 @@ public final class GedcomReader implements AutoCloseable {
     // Cross-reference tracking (US4)
     private final Set<String> definedXrefs = new HashSet<>();
     private final Set<String> referencedXrefs = new HashSet<>();
+    private boolean xrefOverflowWarned;
 
     public GedcomReader(InputStream input, GedcomHandler handler,
                         GedcomReaderConfig config) {
@@ -121,6 +124,13 @@ public final class GedcomReader implements AutoCloseable {
                         break;
                     }
                     headLines.add(copyLine(line));
+                    if (headLines.size() > MAX_HEAD_LINES) {
+                        GedcomParseError err = new GedcomParseError(
+                                GedcomParseError.Severity.FATAL, line.getLineNumber(), 0,
+                                "HEAD record exceeds " + MAX_HEAD_LINES + " lines", null);
+                        handler.fatalError(err);
+                        throw new GedcomFatalException(err);
+                    }
                 }
             }
 
@@ -286,6 +296,11 @@ public final class GedcomReader implements AutoCloseable {
                 }
             }
             assembler.appendPayload(pendingPayload, line.getValue(), tag);
+            if (pendingPayload.length() > config.getMaxPayloadSize()) {
+                reportError(pendingStructure, "Payload exceeds maximum size of "
+                        + config.getMaxPayloadSize() + " characters");
+                pendingPayload.setLength(config.getMaxPayloadSize());
+            }
             return;
         }
 
@@ -368,7 +383,13 @@ public final class GedcomReader implements AutoCloseable {
         if (p.getLevel() == 0) {
             // Track xref definition (US4)
             if (p.getXref() != null) {
-                if (!definedXrefs.add(p.getXref())) {
+                if (definedXrefs.size() >= config.getMaxXrefCount()) {
+                    if (!xrefOverflowWarned) {
+                        xrefOverflowWarned = true;
+                        reportWarning(p, "Cross-reference tracking limit reached ("
+                                + config.getMaxXrefCount() + "); further xrefs will not be tracked");
+                    }
+                } else if (!definedXrefs.add(p.getXref())) {
                     reportError(p, "Duplicate cross-reference identifier: @" + p.getXref() + "@");
                 }
                 // Check xref length in 5.5.5 mode (FR-015)
@@ -397,7 +418,8 @@ public final class GedcomReader implements AutoCloseable {
                 if (ref.startsWith("@") && ref.endsWith("@")) {
                     ref = ref.substring(1, ref.length() - 1);
                 }
-                if (!"VOID".equals(ref)) {
+                if (!"VOID".equals(ref)
+                        && referencedXrefs.size() < config.getMaxXrefCount()) {
                     referencedXrefs.add(ref);
                 }
             }

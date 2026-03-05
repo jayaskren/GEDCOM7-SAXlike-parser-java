@@ -3,11 +3,17 @@ plugins {
 }
 
 group = "org.gedcom7"
-version = "0.1.0-SNAPSHOT"
+version = if (project.hasProperty("releaseVersion")) project.property("releaseVersion")!! else "0.1.0-SNAPSHOT"
+
+base {
+    archivesName.set("gedcom7-parser")
+}
 
 java {
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
+    withSourcesJar()
+    withJavadocJar()
 }
 
 repositories {
@@ -26,6 +32,12 @@ tasks.test {
 
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
+}
+
+tasks.withType<Javadoc> {
+    options.encoding = "UTF-8"
+    (options as StandardJavadocDocletOptions).addStringOption("Xdoclint:none", "-quiet")
+    isFailOnError = false
 }
 
 // ─── GEDCOM 7 structure-definitions code generator (optional) ──────

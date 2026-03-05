@@ -12,10 +12,12 @@
 
 # Package Files #
 *.jar
+!gradle/wrapper/gradle-wrapper.jar
 *.war
 *.nar
 *.ear
 *.zip
+!src/test/resources/**/*.zip
 *.tar.gz
 *.rar
 
@@ -25,7 +27,6 @@ hs_err_pid*
 # Gradle
 build/
 .gradle/
-gradle/wrapper/gradle-wrapper.jar
 
 # IDE
 .idea/

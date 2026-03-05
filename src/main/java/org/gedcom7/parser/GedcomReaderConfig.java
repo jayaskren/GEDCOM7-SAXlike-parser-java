@@ -13,10 +13,14 @@ public final class GedcomReaderConfig {
 
     private static final int DEFAULT_MAX_NESTING_DEPTH = 1000;
     private static final int DEFAULT_MAX_LINE_LENGTH = 1_048_576;
+    private static final int DEFAULT_MAX_PAYLOAD_SIZE = 104_857_600; // 100 MB
+    private static final int DEFAULT_MAX_XREF_COUNT = 10_000_000;
 
     private final boolean strict;
     private final int maxNestingDepth;
     private final int maxLineLength;
+    private final int maxPayloadSize;
+    private final int maxXrefCount;
     private final boolean structureValidation;
     private final boolean autoDetect;
     final Object inputDecoder;
@@ -27,6 +31,8 @@ public final class GedcomReaderConfig {
         this.strict = builder.strict;
         this.maxNestingDepth = builder.maxNestingDepth;
         this.maxLineLength = builder.maxLineLength;
+        this.maxPayloadSize = builder.maxPayloadSize;
+        this.maxXrefCount = builder.maxXrefCount;
         this.structureValidation = builder.structureValidation;
         this.autoDetect = builder.autoDetect;
         this.inputDecoder = builder.inputDecoder;
@@ -100,6 +106,8 @@ public final class GedcomReaderConfig {
     public boolean isStrict() { return strict; }
     public int getMaxNestingDepth() { return maxNestingDepth; }
     public int getMaxLineLength() { return maxLineLength; }
+    public int getMaxPayloadSize() { return maxPayloadSize; }
+    public int getMaxXrefCount() { return maxXrefCount; }
     public boolean isStructureValidationEnabled() { return structureValidation; }
     public boolean isAutoDetect() { return autoDetect; }
     Object getInputDecoderOrNull() { return inputDecoder; }
@@ -112,6 +120,8 @@ public final class GedcomReaderConfig {
                 .strict(strict)
                 .maxNestingDepth(maxNestingDepth)
                 .maxLineLength(maxLineLength)
+                .maxPayloadSize(maxPayloadSize)
+                .maxXrefCount(maxXrefCount)
                 .structureValidation(structureValidation)
                 .autoDetect(autoDetect)
                 .inputDecoder(inputDecoder)
@@ -123,6 +133,8 @@ public final class GedcomReaderConfig {
         private boolean strict = false;
         private int maxNestingDepth = DEFAULT_MAX_NESTING_DEPTH;
         private int maxLineLength = DEFAULT_MAX_LINE_LENGTH;
+        private int maxPayloadSize = DEFAULT_MAX_PAYLOAD_SIZE;
+        private int maxXrefCount = DEFAULT_MAX_XREF_COUNT;
         private boolean structureValidation = false;
         private boolean autoDetect = false;
         Object inputDecoder;
@@ -143,6 +155,18 @@ public final class GedcomReaderConfig {
         public Builder maxLineLength(int length) {
             if (length < 1) throw new IllegalArgumentException("maxLineLength must be >= 1");
             this.maxLineLength = length;
+            return this;
+        }
+
+        public Builder maxPayloadSize(int size) {
+            if (size < 1) throw new IllegalArgumentException("maxPayloadSize must be >= 1");
+            this.maxPayloadSize = size;
+            return this;
+        }
+
+        public Builder maxXrefCount(int count) {
+            if (count < 1) throw new IllegalArgumentException("maxXrefCount must be >= 1");
+            this.maxXrefCount = count;
             return this;
         }
 
