@@ -7,6 +7,8 @@ Auto-generated from all feature plans. Last updated: 2026-03-04
 - N/A (streaming parser, no persistence) (001-gedcom7-sax-parser)
 - Java 11+ + None at runtime (zero-dependency library); JUnit 5 for testing (002-gedzip-gedcom555)
 - Java 11+ (source/target compatibility), built with Gradle (Kotlin DSL) + None at runtime (zero-dependency library); JUnit 5 for tests (003-cicd-build-release)
+- Java 11+ (matching existing parser) + None at runtime (zero external dependencies — constitution Principle VII) (004-gedcom-writer)
+- N/A (streaming writer to OutputStream) (004-gedcom-writer)
 
 - (001-gedcom7-sax-parser)
 
@@ -26,9 +28,9 @@ tests/
 : Follow standard conventions
 
 ## Recent Changes
+- 004-gedcom-writer: Added Java 11+ (matching existing parser) + None at runtime (zero external dependencies — constitution Principle VII)
 - 003-cicd-build-release: Added Java 11+ (source/target compatibility), built with Gradle (Kotlin DSL) + None at runtime (zero-dependency library); JUnit 5 for tests
 - 002-gedzip-gedcom555: Added Java 11+ + None at runtime (zero-dependency library); JUnit 5 for testing
-- 001-gedcom7-sax-parser: Added Java 11+ + None at runtime (zero-dependency
 
 
 <!-- MANUAL ADDITIONS START -->
