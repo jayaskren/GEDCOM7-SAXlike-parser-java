@@ -65,6 +65,11 @@ public final class GedcomWriter implements AutoCloseable {
                     : config.getVersion().toString();
             emitter.emitLine(2, null, "VERS", versString);
 
+            // GEDCOM 5.5.5 requires CHAR substructure
+            if (!config.getVersion().isGedcom7()) {
+                emitter.emitLine(1, null, "CHAR", "UTF-8");
+            }
+
             if (body != null) {
                 HeadContext ctx = new HeadContext(emitter, 0);
                 body.accept(ctx);
@@ -121,6 +126,35 @@ public final class GedcomWriter implements AutoCloseable {
 
     public Xref sharedNote(Consumer<NoteContext> body) throws GedcomWriteException {
         return writeRecord("SNOTE", "N", null, emitter -> {
+            NoteContext ctx = new NoteContext(emitter, 0);
+            body.accept(ctx);
+        });
+    }
+
+    /**
+     * Writes a shared note record with text as the record-level value.
+     *
+     * @param text the note text (may contain newlines, which produce CONT lines)
+     * @param body lambda to add child structures
+     * @return an Xref handle for the created record
+     */
+    public Xref sharedNoteWithText(String text, Consumer<NoteContext> body) throws GedcomWriteException {
+        return writeRecordWithValue("SNOTE", "N", null, text, emitter -> {
+            NoteContext ctx = new NoteContext(emitter, 0);
+            body.accept(ctx);
+        });
+    }
+
+    /**
+     * Writes a shared note record with a developer-provided ID and text as the record-level value.
+     *
+     * @param id   the cross-reference identifier
+     * @param text the note text (may contain newlines, which produce CONT lines)
+     * @param body lambda to add child structures
+     * @return an Xref handle for the created record
+     */
+    public Xref sharedNoteWithText(String id, String text, Consumer<NoteContext> body) throws GedcomWriteException {
+        return writeRecordWithValue("SNOTE", "N", id, text, emitter -> {
             NoteContext ctx = new NoteContext(emitter, 0);
             body.accept(ctx);
         });
@@ -225,11 +259,7 @@ public final class GedcomWriter implements AutoCloseable {
         if (closed) return;
         try {
             if (!headWritten) {
-                try {
-                    head(head -> {});
-                } catch (GedcomWriteException e) {
-                    // Should not happen for default head
-                }
+                head(head -> {});
             }
             if (!trlrWritten) {
                 trailer();
@@ -257,11 +287,23 @@ public final class GedcomWriter implements AutoCloseable {
         try {
             emitter.emitLine(0, xrefId, tag, null);
             body.write(emitter);
-        } catch (RuntimeException e) {
-            if (e.getCause() instanceof GedcomWriteException) {
-                throw (GedcomWriteException) e.getCause();
-            }
-            throw e;
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+
+        return xref;
+    }
+
+    private Xref writeRecordWithValue(String tag, String prefix, String devId, String value, RecordBody body) throws GedcomWriteException {
+        checkNotClosed();
+        ensureHead();
+
+        String xrefId = devId != null ? devId : xrefGenerator.next(prefix);
+        Xref xref = Xref.of(xrefId);
+
+        try {
+            emitter.emitValueWithCont(0, xrefId, tag, value);
+            body.write(emitter);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

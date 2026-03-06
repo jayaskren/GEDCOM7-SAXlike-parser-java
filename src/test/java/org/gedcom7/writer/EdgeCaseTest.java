@@ -23,7 +23,7 @@ class EdgeCaseTest {
             writer.head(head -> head.source("Test"));
             writer.individual(indi -> {
                 indi.personalName("John /Doe/");
-                indi.sex(null);
+                indi.sex((String) null);
                 indi.occupation(null);
             });
             writer.trailer();
@@ -73,9 +73,10 @@ class EdgeCaseTest {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         try (GedcomWriter writer = new GedcomWriter(out)) {
             writer.head(head -> head.source("Test"));
+            // GedcomWriteException is now unchecked (RuntimeException), so throw directly
             assertThrows(GedcomWriteException.class, () ->
                     writer.individual(indi -> {
-                        throw new RuntimeException(new GedcomWriteException("test error"));
+                        throw new GedcomWriteException("test error");
                     }));
         }
     }

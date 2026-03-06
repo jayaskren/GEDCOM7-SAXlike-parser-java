@@ -138,12 +138,12 @@ public final class GedcomWriterConfig {
             return this;
         }
 
-        Builder escapeAllAt(boolean escapeAllAt) {
+        public Builder escapeAllAt(boolean escapeAllAt) {
             this.escapeAllAt = escapeAllAt;
             return this;
         }
 
-        Builder concEnabled(boolean concEnabled) {
+        public Builder concEnabled(boolean concEnabled) {
             this.concEnabled = concEnabled;
             return this;
         }

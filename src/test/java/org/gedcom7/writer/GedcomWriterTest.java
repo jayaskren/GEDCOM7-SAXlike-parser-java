@@ -318,7 +318,7 @@ class GedcomWriterTest {
             writer.head(head -> head.source("MyApp"));
             writer.individual(indi -> {
                 indi.personalName("John /Doe/");
-                indi.sex(null);  // should be omitted
+                indi.sex((String) null);  // should be omitted
             });
             writer.trailer();
         });

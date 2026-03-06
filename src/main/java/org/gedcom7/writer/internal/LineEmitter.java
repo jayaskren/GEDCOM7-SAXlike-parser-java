@@ -123,6 +123,39 @@ public final class LineEmitter {
     }
 
     /**
+     * Emits a line where part of the value is pre-escaped (not subject to @@-doubling)
+     * and the remainder is processed through normal escapeAt() logic.
+     *
+     * <p>This is used for GEDCOM 5.5.5 calendar escape prefixes like {@code @#DJULIAN@}
+     * which must pass through as-is, while the rest of the date value still gets
+     * normal @-escaping.
+     *
+     * @param level            the structure level
+     * @param xref             the cross-reference identifier, or null
+     * @param tag              the GEDCOM tag
+     * @param preEscapedPrefix the prefix that should NOT be @@-escaped
+     * @param remainingValue   the remainder that SHOULD be @@-escaped (may be null or empty)
+     */
+    public void emitLinePreEscaped(int level, String xref, String tag,
+                                    String preEscapedPrefix, String remainingValue) throws IOException {
+        String escapedRemainder = escapeAt(remainingValue);
+        String combinedValue = preEscapedPrefix +
+                (escapedRemainder != null ? escapedRemainder : "");
+        // Write the combined value directly without further escaping
+        lineBuffer.setLength(0);
+        lineBuffer.append(level);
+        if (xref != null) {
+            lineBuffer.append(' ').append('@').append(xref).append('@');
+        }
+        lineBuffer.append(' ').append(tag);
+        if (!combinedValue.isEmpty()) {
+            lineBuffer.append(' ').append(combinedValue);
+        }
+        lineBuffer.append(config.getLineEnding());
+        out.write(lineBuffer.toString().getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
      * Flushes the underlying output stream.
      */
     public void flush() throws IOException {

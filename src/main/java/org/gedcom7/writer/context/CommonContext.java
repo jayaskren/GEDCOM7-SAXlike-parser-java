@@ -144,6 +144,24 @@ public abstract class CommonContext {
         structure("UID", uid);
     }
 
+    // --- Event helper ---
+
+    /**
+     * Emits an event substructure with the given tag and provides a typed
+     * {@link EventContext} to the body lambda for adding date, place, etc.
+     */
+    protected void emitEvent(String tag, Consumer<EventContext> body) {
+        try {
+            emitter.emitLine(level + 1, null, tag, null);
+            if (body != null) {
+                EventContext ctx = new EventContext(emitter, level + 1);
+                body.accept(ctx);
+            }
+        } catch (java.io.IOException e) {
+            throw new java.io.UncheckedIOException(e);
+        }
+    }
+
     // --- Internal helpers ---
 
     /**

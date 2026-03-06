@@ -83,8 +83,8 @@ class Gedcom555WriterTest {
                 throw new RuntimeException(e);
             }
         });
-        // The raw date string should pass through as-is
-        assertTrue(output.contains("2 DATE @#DJULIAN@ 25 DEC 1752\n")
-                || output.contains("2 DATE @@#DJULIAN@@ 25 DEC 1752\n"));
+        // The calendar escape prefix should pass through as-is (not @@-doubled)
+        assertTrue(output.contains("2 DATE @#DJULIAN@ 25 DEC 1752\n"),
+                "Calendar escape should be preserved, got: " + output);
     }
 }

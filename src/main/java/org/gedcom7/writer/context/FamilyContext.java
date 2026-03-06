@@ -54,15 +54,19 @@ public final class FamilyContext extends CommonContext {
         emitEvent("ANUL", body);
     }
 
-    private void emitEvent(String tag, Consumer<EventContext> body) {
-        try {
-            emitter().emitLine(level() + 1, null, tag, null);
-            if (body != null) {
-                EventContext ctx = new EventContext(emitter(), level() + 1);
-                body.accept(ctx);
-            }
-        } catch (java.io.IOException e) {
-            throw new java.io.UncheckedIOException(e);
-        }
+    // --- LDS Ordinances ---
+
+    public void ldsSealingToSpouse(Consumer<EventContext> body) {
+        emitEvent("SLGS", body);
     }
+
+    // --- Generic event ---
+
+    /**
+     * Emits a generic event with the given tag.
+     */
+    public void event(String tag, Consumer<EventContext> body) {
+        emitEvent(tag, body);
+    }
+
 }
