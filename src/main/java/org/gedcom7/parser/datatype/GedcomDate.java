@@ -7,13 +7,14 @@ import java.util.Objects;
  * A date consists of a calendar system, year, optional month, optional day,
  * and optional epoch marker (e.g. "BCE").
  */
-public final class GedcomDate {
+public final class GedcomDate implements GedcomDateValue {
 
     private final String calendar;
     private final int year;
     private final String month;
     private final int day;
     private final String epoch;
+    private final String originalText;
 
     /**
      * Constructs a new GedcomDate.
@@ -25,11 +26,26 @@ public final class GedcomDate {
      * @param epoch    the epoch marker (e.g. "BCE"), or null if absent
      */
     public GedcomDate(String calendar, int year, String month, int day, String epoch) {
+        this(calendar, year, month, day, epoch, null);
+    }
+
+    /**
+     * Constructs a new GedcomDate with original text.
+     *
+     * @param calendar     the calendar system (e.g. "GREGORIAN", "JULIAN", "FRENCH_R", "HEBREW")
+     * @param year         the year
+     * @param month        the month abbreviation, or null if absent
+     * @param day          the day of the month, or -1 if absent
+     * @param epoch        the epoch marker (e.g. "BCE"), or null if absent
+     * @param originalText the original unparsed date text, or null
+     */
+    public GedcomDate(String calendar, int year, String month, int day, String epoch, String originalText) {
         this.calendar = Objects.requireNonNull(calendar, "calendar must not be null");
         this.year = year;
         this.month = month;
         this.day = day;
         this.epoch = epoch;
+        this.originalText = originalText;
     }
 
     public String getCalendar() {
@@ -50,6 +66,16 @@ public final class GedcomDate {
 
     public String getEpoch() {
         return epoch;
+    }
+
+    @Override
+    public DateValueType getType() {
+        return DateValueType.EXACT;
+    }
+
+    @Override
+    public String getOriginalText() {
+        return originalText;
     }
 
     @Override

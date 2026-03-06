@@ -29,6 +29,22 @@ public abstract class GedcomHandler {
      */
     public void startRecord(int level, String xref, String tag) {}
 
+    /**
+     * Called when a level-0 record is encountered.
+     * This overload includes the record's payload value (if present).
+     *
+     * <p>The default implementation delegates to
+     * {@link #startRecord(int, String, String)} for backward compatibility.
+     *
+     * @param level  the level number (always 0 for records)
+     * @param xref   the cross-reference identifier, or null
+     * @param tag    the record tag (e.g., "INDI", "FAM", "SNOTE")
+     * @param value  the record's payload value, or null if none
+     */
+    public void startRecord(int level, String xref, String tag, String value) {
+        startRecord(level, xref, tag);
+    }
+
     /** Fires when a record's substructures are complete. */
     public void endRecord(String tag) {}
 

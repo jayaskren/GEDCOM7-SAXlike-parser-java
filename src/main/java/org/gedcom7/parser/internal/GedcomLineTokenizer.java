@@ -2,12 +2,16 @@ package org.gedcom7.parser.internal;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.function.LongSupplier;
 
 /**
  * Reads a character stream and parses GEDCOM lines into
  * {@link GedcomLine} tokens. Handles LF, CR, and CRLF
  * line endings. Reuses a single StringBuilder buffer to
  * minimize allocation.
+ *
+ * <p>Uses an internal 8KB character buffer for bulk reads,
+ * eliminating per-character method calls on the underlying Reader.
  *
  * <p>GEDCOM line grammar (ABNF):
  * <pre>
@@ -30,13 +34,54 @@ public final class GedcomLineTokenizer {
     private boolean eof;
     private int pendingChar = -2; // -2 = nothing pending, -1 = EOF
 
+    // Buffered I/O: 8KB char buffer for bulk reads
+    private final char[] buf = new char[8192];
+    private int bufPos;
+    private int bufLimit;
+
+    // Byte offset tracking
+    private final LongSupplier byteCountSupplier;
+    private long runningByteOffset;
+    private long currentLineByteOffset;
+
     public GedcomLineTokenizer(Reader reader) {
         this(reader, DEFAULT_MAX_LINE_LENGTH);
     }
 
     public GedcomLineTokenizer(Reader reader, int maxLineLength) {
+        this(reader, maxLineLength, null, 0);
+    }
+
+    /**
+     * Creates a tokenizer with byte offset tracking.
+     *
+     * @param reader         the character stream to tokenize
+     * @param maxLineLength  maximum allowed line length
+     * @param byteCountSupplier  supplier of current byte count from the underlying stream,
+     *                           or null if byte offsets are not available (Reader-based input)
+     * @param initialByteOffset  initial byte offset (e.g., 3 for UTF-8 BOM)
+     */
+    public GedcomLineTokenizer(Reader reader, int maxLineLength,
+                               LongSupplier byteCountSupplier, long initialByteOffset) {
         this.reader = reader;
         this.maxLineLength = maxLineLength;
+        this.byteCountSupplier = byteCountSupplier;
+        this.runningByteOffset = initialByteOffset;
+    }
+
+    /**
+     * Returns the next character from the internal buffer, refilling from
+     * the underlying Reader when the buffer is exhausted. Returns -1 on EOF.
+     */
+    private int readChar() throws IOException {
+        if (bufPos >= bufLimit) {
+            bufLimit = reader.read(buf, 0, buf.length);
+            bufPos = 0;
+            if (bufLimit <= 0) {
+                return -1;
+            }
+        }
+        return buf[bufPos++];
     }
 
     /**
@@ -48,12 +93,15 @@ public final class GedcomLineTokenizer {
         while (true) {
             if (eof) return false;
 
+            // Record byte offset at the start of this line
+            currentLineByteOffset = runningByteOffset;
+
             lineBuffer.setLength(0);
             boolean foundContent = readRawLine();
 
             if (lineBuffer.length() == 0) {
                 if (eof) return false;
-                // Blank line — skip
+                // Blank line — skip (but account for line ending bytes)
                 continue;
             }
 
@@ -61,6 +109,14 @@ public final class GedcomLineTokenizer {
             line.reset();
             line.setLineNumber(lineNumber);
             line.setRawLine(lineBuffer.toString());
+
+            // Set byte offset: -1 when no InputStream-based tracking is available
+            if (byteCountSupplier != null) {
+                line.setByteOffset(currentLineByteOffset);
+            } else {
+                line.setByteOffset(-1);
+            }
+
             parseLine(lineBuffer, line);
             return true;
         }
@@ -78,7 +134,7 @@ public final class GedcomLineTokenizer {
                 ch = pendingChar;
                 pendingChar = -2;
             } else {
-                ch = reader.read();
+                ch = readChar();
             }
 
             if (ch == -1) {
@@ -87,17 +143,25 @@ public final class GedcomLineTokenizer {
             }
 
             if (ch == '\n') {
+                // LF is 1 byte in UTF-8
+                runningByteOffset += utf8ByteLength(lineBuffer) + 1;
                 return true;
             }
 
             if (ch == '\r') {
                 // Check for CRLF
-                int next = reader.read();
-                if (next != '\n' && next != -1) {
-                    pendingChar = next;
+                int next = readChar();
+                int lineEndingBytes;
+                if (next == '\n') {
+                    lineEndingBytes = 2; // CRLF
                 } else if (next == -1) {
+                    lineEndingBytes = 1; // CR at EOF
                     eof = true;
+                } else {
+                    lineEndingBytes = 1; // CR only
+                    pendingChar = next;
                 }
+                runningByteOffset += utf8ByteLength(lineBuffer) + lineEndingBytes;
                 return true;
             }
 
@@ -107,6 +171,27 @@ public final class GedcomLineTokenizer {
             }
             any = true;
         }
+    }
+
+    /**
+     * Computes the UTF-8 byte length of the given char sequence.
+     */
+    private static long utf8ByteLength(CharSequence cs) {
+        long bytes = 0;
+        for (int i = 0; i < cs.length(); i++) {
+            char ch = cs.charAt(i);
+            if (ch <= 0x7F) {
+                bytes += 1;
+            } else if (ch <= 0x7FF) {
+                bytes += 2;
+            } else if (Character.isHighSurrogate(ch)) {
+                bytes += 4; // surrogate pair = 4 bytes
+                i++; // skip low surrogate
+            } else {
+                bytes += 3;
+            }
+        }
+        return bytes;
     }
 
     /**

@@ -1,5 +1,7 @@
 package org.gedcom7.parser.internal;
 
+import org.gedcom7.parser.spi.AtEscapeStrategy;
+
 /**
  * GEDCOM 7 escape strategy: only a leading {@code @@} is
  * decoded to {@code @}. Non-leading {@code @@} sequences

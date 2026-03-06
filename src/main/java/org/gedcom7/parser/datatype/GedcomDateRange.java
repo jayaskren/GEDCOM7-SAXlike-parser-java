@@ -7,23 +7,37 @@ import java.util.Objects;
  * Covers range types such as BET...AND, BEF, AFT, and approximate types ABT, CAL, EST,
  * as well as EXACT dates.
  */
-public final class GedcomDateRange {
+public final class GedcomDateRange implements GedcomDateValue {
 
     private final GedcomDate start;
     private final GedcomDate end;
-    private final String type;
+    private final String rangeType;
+    private final String originalText;
 
     /**
      * Constructs a new GedcomDateRange.
      *
      * @param start the start date, or null if absent (e.g. for BEF)
      * @param end   the end date, or null if absent (e.g. for AFT)
-     * @param type  the range type: "BET_AND", "BEF", "AFT", "ABT", "CAL", "EST", or "EXACT"
+     * @param rangeType  the range type: "BET_AND", "BEF", "AFT", "ABT", "CAL", "EST", or "EXACT"
      */
-    public GedcomDateRange(GedcomDate start, GedcomDate end, String type) {
+    public GedcomDateRange(GedcomDate start, GedcomDate end, String rangeType) {
+        this(start, end, rangeType, null);
+    }
+
+    /**
+     * Constructs a new GedcomDateRange with original text.
+     *
+     * @param start        the start date, or null if absent (e.g. for BEF)
+     * @param end          the end date, or null if absent (e.g. for AFT)
+     * @param rangeType    the range type: "BET_AND", "BEF", "AFT", "ABT", "CAL", "EST", or "EXACT"
+     * @param originalText the original unparsed date text, or null
+     */
+    public GedcomDateRange(GedcomDate start, GedcomDate end, String rangeType, String originalText) {
         this.start = start;
         this.end = end;
-        this.type = Objects.requireNonNull(type, "type must not be null");
+        this.rangeType = Objects.requireNonNull(rangeType, "type must not be null");
+        this.originalText = originalText;
     }
 
     public GedcomDate getStart() {
@@ -34,8 +48,32 @@ public final class GedcomDateRange {
         return end;
     }
 
-    public String getType() {
-        return type;
+    /**
+     * Returns the range qualifier string (e.g. "BET_AND", "BEF", "AFT", "ABT", "CAL", "EST", "EXACT").
+     *
+     * @return the range type string
+     */
+    public String getRangeType() {
+        return rangeType;
+    }
+
+    @Override
+    public DateValueType getType() {
+        switch (rangeType) {
+            case "ABT":
+            case "CAL":
+            case "EST":
+                return DateValueType.APPROXIMATE;
+            case "EXACT":
+                return DateValueType.EXACT;
+            default:
+                return DateValueType.RANGE;
+        }
+    }
+
+    @Override
+    public String getOriginalText() {
+        return originalText;
     }
 
     @Override
@@ -45,18 +83,18 @@ public final class GedcomDateRange {
         GedcomDateRange that = (GedcomDateRange) o;
         return Objects.equals(start, that.start)
                 && Objects.equals(end, that.end)
-                && Objects.equals(type, that.type);
+                && Objects.equals(rangeType, that.rangeType);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(start, end, type);
+        return Objects.hash(start, end, rangeType);
     }
 
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder("GedcomDateRange{");
-        sb.append("type='").append(type).append('\'');
+        sb.append("rangeType='").append(rangeType).append('\'');
         if (start != null) {
             sb.append(", start=").append(start);
         }

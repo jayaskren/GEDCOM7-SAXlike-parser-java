@@ -28,9 +28,9 @@ tests/
 : Follow standard conventions
 
 ## Recent Changes
+- 005-parser-gaps-remediation: Added Java 11+ + None at runtime (zero-dependency library)
 - 004-gedcom-writer: Added Java 11+ (matching existing parser) + None at runtime (zero external dependencies — constitution Principle VII)
 - 003-cicd-build-release: Added Java 11+ (source/target compatibility), built with Gradle (Kotlin DSL) + None at runtime (zero-dependency library); JUnit 5 for tests
-- 002-gedzip-gedcom555: Added Java 11+ + None at runtime (zero-dependency library); JUnit 5 for testing
 
 
 <!-- MANUAL ADDITIONS START -->

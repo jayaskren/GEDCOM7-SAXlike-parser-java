@@ -1,10 +1,12 @@
-package org.gedcom7.parser.internal;
+package org.gedcom7.parser.spi;
 
 /**
- * Strategy interface for assembling multi-line payloads
- * from pseudo-structures (CONT in GEDCOM 7, CONT/CONC in 5.5.x).
+ * SPI for assembling multi-line payloads from pseudo-structures
+ * (CONT in GEDCOM 7, CONT/CONC in 5.5.x).
  *
- * <p>This is an internal interface and not part of the public API.
+ * <p>This interface is part of the public SPI. Implementations
+ * should be placed in the {@code org.gedcom7.parser.internal}
+ * package or in user-provided packages.
  */
 public interface PayloadAssembler {
 

@@ -25,7 +25,7 @@ class DateParserTest {
         Object result = GedcomDataTypes.parseDateValue("1 JAN 2000");
         assertInstanceOf(GedcomDateRange.class, result);
         GedcomDateRange range = (GedcomDateRange) result;
-        assertEquals("EXACT", range.getType());
+        assertEquals("EXACT", range.getRangeType());
         GedcomDate date = range.getStart();
         assertEquals(2000, date.getYear());
         assertEquals("JAN", date.getMonth());
@@ -39,7 +39,7 @@ class DateParserTest {
         Object result = GedcomDataTypes.parseDateValue("2000");
         assertInstanceOf(GedcomDateRange.class, result);
         GedcomDateRange range = (GedcomDateRange) result;
-        assertEquals("EXACT", range.getType());
+        assertEquals("EXACT", range.getRangeType());
         GedcomDate date = range.getStart();
         assertEquals(2000, date.getYear());
         assertNull(date.getMonth());
@@ -51,7 +51,7 @@ class DateParserTest {
         Object result = GedcomDataTypes.parseDateValue("MAR 2000");
         assertInstanceOf(GedcomDateRange.class, result);
         GedcomDateRange range = (GedcomDateRange) result;
-        assertEquals("EXACT", range.getType());
+        assertEquals("EXACT", range.getRangeType());
         GedcomDate date = range.getStart();
         assertEquals(2000, date.getYear());
         assertEquals("MAR", date.getMonth());
@@ -65,7 +65,7 @@ class DateParserTest {
         Object result = GedcomDataTypes.parseDateValue("BET 1 JAN 2000 AND 31 DEC 2000");
         assertInstanceOf(GedcomDateRange.class, result);
         GedcomDateRange range = (GedcomDateRange) result;
-        assertEquals("BET_AND", range.getType());
+        assertEquals("BET_AND", range.getRangeType());
         assertNotNull(range.getStart());
         assertNotNull(range.getEnd());
         assertEquals(2000, range.getStart().getYear());
@@ -81,7 +81,7 @@ class DateParserTest {
         Object result = GedcomDataTypes.parseDateValue("BEF 2000");
         assertInstanceOf(GedcomDateRange.class, result);
         GedcomDateRange range = (GedcomDateRange) result;
-        assertEquals("BEF", range.getType());
+        assertEquals("BEF", range.getRangeType());
         assertNull(range.getStart());
         assertEquals(2000, range.getEnd().getYear());
     }
@@ -91,7 +91,7 @@ class DateParserTest {
         Object result = GedcomDataTypes.parseDateValue("AFT 2000");
         assertInstanceOf(GedcomDateRange.class, result);
         GedcomDateRange range = (GedcomDateRange) result;
-        assertEquals("AFT", range.getType());
+        assertEquals("AFT", range.getRangeType());
         assertEquals(2000, range.getStart().getYear());
         assertNull(range.getEnd());
     }
@@ -126,7 +126,7 @@ class DateParserTest {
         Object result = GedcomDataTypes.parseDateValue("FROM 2000 TO 2001");
         assertInstanceOf(GedcomDatePeriod.class, result);
         GedcomDatePeriod period = (GedcomDatePeriod) result;
-        assertEquals("FROM_TO", period.getType());
+        assertEquals("FROM_TO", period.getPeriodType());
         assertNotNull(period.getFrom());
         assertNotNull(period.getTo());
         assertEquals(2000, period.getFrom().getYear());
@@ -138,7 +138,7 @@ class DateParserTest {
         Object result = GedcomDataTypes.parseDateValue("FROM 2000");
         assertInstanceOf(GedcomDatePeriod.class, result);
         GedcomDatePeriod period = (GedcomDatePeriod) result;
-        assertEquals("FROM", period.getType());
+        assertEquals("FROM", period.getPeriodType());
         assertNotNull(period.getFrom());
         assertNull(period.getTo());
         assertEquals(2000, period.getFrom().getYear());
@@ -149,7 +149,7 @@ class DateParserTest {
         Object result = GedcomDataTypes.parseDateValue("TO 2001");
         assertInstanceOf(GedcomDatePeriod.class, result);
         GedcomDatePeriod period = (GedcomDatePeriod) result;
-        assertEquals("TO", period.getType());
+        assertEquals("TO", period.getPeriodType());
         assertNull(period.getFrom());
         assertNotNull(period.getTo());
         assertEquals(2001, period.getTo().getYear());
@@ -162,7 +162,7 @@ class DateParserTest {
         Object result = GedcomDataTypes.parseDateValue("500 BCE");
         assertInstanceOf(GedcomDateRange.class, result);
         GedcomDateRange range = (GedcomDateRange) result;
-        assertEquals("EXACT", range.getType());
+        assertEquals("EXACT", range.getRangeType());
         GedcomDate date = range.getStart();
         assertEquals(500, date.getYear());
         assertEquals("BCE", date.getEpoch());
@@ -177,10 +177,12 @@ class DateParserTest {
                 () -> GedcomDataTypes.parseDateValue(input));
     }
 
-    @ParameterizedTest(name = "parseDateValue(\"{0}\") throws IllegalArgumentException")
+    @ParameterizedTest(name = "parseDateValue(\"{0}\") returns UNPARSEABLE")
     @ValueSource(strings = {"NOTADATE", "32 JAN 2000"})
-    void invalidDates_throwsIllegalArgumentException(String input) {
-        assertThrows(IllegalArgumentException.class,
-                () -> GedcomDataTypes.parseDateValue(input));
+    void invalidDates_returnUnparseable(String input) {
+        GedcomDateValue result = GedcomDataTypes.parseDateValue(input);
+        assertNotNull(result);
+        assertEquals(DateValueType.UNPARSEABLE, result.getType());
+        assertEquals(input, result.getOriginalText());
     }
 }

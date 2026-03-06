@@ -1,5 +1,7 @@
 package org.gedcom7.parser.internal;
 
+import org.gedcom7.parser.spi.PayloadAssembler;
+
 /**
  * GEDCOM 5.5.5 payload assembler. Recognises both CONT and CONC
  * as continuation pseudo-structures. CONT joins with a newline;

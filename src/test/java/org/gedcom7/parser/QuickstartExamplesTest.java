@@ -158,7 +158,7 @@ class QuickstartExamplesTest {
         assertTrue(dateResult instanceof GedcomDateRange,
                 "An exact date should be returned as a GedcomDateRange with EXACT type");
         GedcomDateRange dateRange = (GedcomDateRange) dateResult;
-        assertEquals("EXACT", dateRange.getType());
+        assertEquals("EXACT", dateRange.getRangeType());
         GedcomDate date = dateRange.getStart();
         assertNotNull(date, "Start date should not be null for an exact date");
         assertEquals(1952, date.getYear());

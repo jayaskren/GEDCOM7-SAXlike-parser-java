@@ -399,6 +399,59 @@ public final class StructureDefinitions {
         // EXID substructures
         m.put("EXID\tTYPE", "EXID-TYPE");
 
+        // LDS ordinance substructures (BAPL, CONL, ENDL, INIL, SLGC, SLGS)
+        m.put("BAPL\tDATE", "DATE");
+        m.put("BAPL\tTEMP", "TEMP");
+        m.put("BAPL\tPLAC", "PLAC");
+        m.put("BAPL\tSTAT", "ord-STAT");
+        m.put("BAPL\tNOTE", "NOTE");
+        m.put("BAPL\tSOUR", "SOUR");
+        m.put("BAPL\tSNOTE", "SNOTE");
+
+        m.put("CONL\tDATE", "DATE");
+        m.put("CONL\tTEMP", "TEMP");
+        m.put("CONL\tPLAC", "PLAC");
+        m.put("CONL\tSTAT", "ord-STAT");
+        m.put("CONL\tNOTE", "NOTE");
+        m.put("CONL\tSOUR", "SOUR");
+        m.put("CONL\tSNOTE", "SNOTE");
+
+        m.put("ENDL\tDATE", "DATE");
+        m.put("ENDL\tTEMP", "TEMP");
+        m.put("ENDL\tPLAC", "PLAC");
+        m.put("ENDL\tSTAT", "ord-STAT");
+        m.put("ENDL\tNOTE", "NOTE");
+        m.put("ENDL\tSOUR", "SOUR");
+        m.put("ENDL\tSNOTE", "SNOTE");
+
+        m.put("INIL\tDATE", "DATE");
+        m.put("INIL\tTEMP", "TEMP");
+        m.put("INIL\tPLAC", "PLAC");
+        m.put("INIL\tSTAT", "ord-STAT");
+        m.put("INIL\tNOTE", "NOTE");
+        m.put("INIL\tSOUR", "SOUR");
+        m.put("INIL\tSNOTE", "SNOTE");
+
+        m.put("SLGC\tDATE", "DATE");
+        m.put("SLGC\tTEMP", "TEMP");
+        m.put("SLGC\tPLAC", "PLAC");
+        m.put("SLGC\tSTAT", "ord-STAT");
+        m.put("SLGC\tNOTE", "NOTE");
+        m.put("SLGC\tSOUR", "SOUR");
+        m.put("SLGC\tSNOTE", "SNOTE");
+        m.put("SLGC\tFAMC", "FAMC");
+
+        m.put("SLGS\tDATE", "DATE");
+        m.put("SLGS\tTEMP", "TEMP");
+        m.put("SLGS\tPLAC", "PLAC");
+        m.put("SLGS\tSTAT", "ord-STAT");
+        m.put("SLGS\tNOTE", "NOTE");
+        m.put("SLGS\tSOUR", "SOUR");
+        m.put("SLGS\tSNOTE", "SNOTE");
+
+        // ord-STAT substructures
+        m.put("ord-STAT\tDATE", "DATE-exact");
+
         SUB_LOOKUP = Collections.unmodifiableMap(m);
     }
 
@@ -782,6 +835,59 @@ public final class StructureDefinitions {
         // ADOP-FAMC cardinalities
         m.put("ADOP-FAMC\tFAMC-ADOP", "{0:1}");
 
+        // LDS ordinance cardinalities (BAPL, CONL, ENDL, INIL, SLGC, SLGS)
+        m.put("BAPL\tDATE", "{0:1}");
+        m.put("BAPL\tTEMP", "{0:1}");
+        m.put("BAPL\tPLAC", "{0:1}");
+        m.put("BAPL\tord-STAT", "{0:1}");
+        m.put("BAPL\tNOTE", "{0:M}");
+        m.put("BAPL\tSOUR", "{0:M}");
+        m.put("BAPL\tSNOTE", "{0:M}");
+
+        m.put("CONL\tDATE", "{0:1}");
+        m.put("CONL\tTEMP", "{0:1}");
+        m.put("CONL\tPLAC", "{0:1}");
+        m.put("CONL\tord-STAT", "{0:1}");
+        m.put("CONL\tNOTE", "{0:M}");
+        m.put("CONL\tSOUR", "{0:M}");
+        m.put("CONL\tSNOTE", "{0:M}");
+
+        m.put("ENDL\tDATE", "{0:1}");
+        m.put("ENDL\tTEMP", "{0:1}");
+        m.put("ENDL\tPLAC", "{0:1}");
+        m.put("ENDL\tord-STAT", "{0:1}");
+        m.put("ENDL\tNOTE", "{0:M}");
+        m.put("ENDL\tSOUR", "{0:M}");
+        m.put("ENDL\tSNOTE", "{0:M}");
+
+        m.put("INIL\tDATE", "{0:1}");
+        m.put("INIL\tTEMP", "{0:1}");
+        m.put("INIL\tPLAC", "{0:1}");
+        m.put("INIL\tord-STAT", "{0:1}");
+        m.put("INIL\tNOTE", "{0:M}");
+        m.put("INIL\tSOUR", "{0:M}");
+        m.put("INIL\tSNOTE", "{0:M}");
+
+        m.put("SLGC\tDATE", "{0:1}");
+        m.put("SLGC\tTEMP", "{0:1}");
+        m.put("SLGC\tPLAC", "{0:1}");
+        m.put("SLGC\tord-STAT", "{0:1}");
+        m.put("SLGC\tNOTE", "{0:M}");
+        m.put("SLGC\tSOUR", "{0:M}");
+        m.put("SLGC\tSNOTE", "{0:M}");
+        m.put("SLGC\tFAMC", "{1:1}");
+
+        m.put("SLGS\tDATE", "{0:1}");
+        m.put("SLGS\tTEMP", "{0:1}");
+        m.put("SLGS\tPLAC", "{0:1}");
+        m.put("SLGS\tord-STAT", "{0:1}");
+        m.put("SLGS\tNOTE", "{0:M}");
+        m.put("SLGS\tSOUR", "{0:M}");
+        m.put("SLGS\tSNOTE", "{0:M}");
+
+        // ord-STAT cardinalities
+        m.put("ord-STAT\tDATE-exact", "{1:1}");
+
         CARD_LOOKUP = Collections.unmodifiableMap(m);
     }
 
@@ -831,6 +937,39 @@ public final class StructureDefinitions {
      */
     public static String recordContext(String recordTag) {
         return RECORD_CONTEXT.get(recordTag);
+    }
+
+    /**
+     * Returns true if the cardinality requires at least one occurrence.
+     * A cardinality is required when it starts with "{1:", meaning the
+     * minimum count is 1 (e.g. "{1:1}", "{1:M}").
+     *
+     * @param cardinality the cardinality string (e.g. "{0:1}", "{1:1}", "{1:M}")
+     * @return true if minimum is 1
+     */
+    public static boolean isRequired(String cardinality) {
+        return cardinality != null && cardinality.startsWith("{1:");
+    }
+
+    /**
+     * Returns a map of required children for the given parent context ID.
+     * Iterates CARD_LOOKUP entries for the given context and returns those
+     * where {@link #isRequired(String)} is true.
+     *
+     * @param contextId the parent structure context (e.g. "ASSO", "record-REPO")
+     * @return map of child structureId to cardinality string for required children;
+     *         empty map if none
+     */
+    public static Map<String, String> getRequiredChildren(String contextId) {
+        Map<String, String> result = new HashMap<>();
+        String prefix = contextId + "\t";
+        for (Map.Entry<String, String> entry : CARD_LOOKUP.entrySet()) {
+            if (entry.getKey().startsWith(prefix) && isRequired(entry.getValue())) {
+                String childStructureId = entry.getKey().substring(prefix.length());
+                result.put(childStructureId, entry.getValue());
+            }
+        }
+        return result;
     }
 
     /**

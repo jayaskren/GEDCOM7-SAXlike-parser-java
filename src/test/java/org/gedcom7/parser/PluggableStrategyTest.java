@@ -1,9 +1,14 @@
 package org.gedcom7.parser;
 
+import org.gedcom7.parser.spi.AtEscapeStrategy;
+import org.gedcom7.parser.spi.GedcomInputDecoder;
+import org.gedcom7.parser.spi.PayloadAssembler;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,9 +31,12 @@ class PluggableStrategyTest {
 
     @Test
     void builderPreservesStrategies() {
-        Object mockDecoder = new Object();
-        Object mockAssembler = new Object();
-        Object mockEscape = new Object();
+        GedcomInputDecoder mockDecoder = input -> new InputStreamReader(input, StandardCharsets.UTF_8);
+        PayloadAssembler mockAssembler = new PayloadAssembler() {
+            @Override public boolean isPseudoStructure(String tag) { return false; }
+            @Override public void appendPayload(StringBuilder payload, String continuationValue, String tag) {}
+        };
+        AtEscapeStrategy mockEscape = value -> value;
 
         GedcomReaderConfig config = new GedcomReaderConfig.Builder()
                 .inputDecoder(mockDecoder)
@@ -43,7 +51,7 @@ class PluggableStrategyTest {
 
     @Test
     void toBuilder_preservesStrategies() {
-        Object mockDecoder = new Object();
+        GedcomInputDecoder mockDecoder = input -> new InputStreamReader(input, StandardCharsets.UTF_8);
         GedcomReaderConfig original = new GedcomReaderConfig.Builder()
                 .inputDecoder(mockDecoder)
                 .build();
