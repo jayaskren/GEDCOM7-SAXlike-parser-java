@@ -1,18 +1,20 @@
 <!--
 Sync Impact Report
 ==================
-Version change: N/A -> 1.0.0 (initial ratification)
-Modified principles: N/A (initial version)
+Version change: 1.0.0 -> 1.1.0
+Modified principles:
+  - V. Test-Driven Development: expanded to include
+    post-task agent review and final evaluation requirements
 Added sections:
-  - Core Principles (7 principles)
-  - GEDCOM 7 Compliance Requirements
-  - Development Workflow
-  - Governance
-Removed sections: N/A
+  - VIII. Independent Verification (new principle)
+Removed sections: None
 Templates requiring updates:
+  - .specify/templates/tasks-template.md: ⚠ pending
+    (task generation commands should add review tasks per
+    story and a final evaluation task; handled by
+    /speckit.tasks command instructions, not template itself)
   - .specify/templates/plan-template.md: OK (no updates needed)
   - .specify/templates/spec-template.md: OK (no updates needed)
-  - .specify/templates/tasks-template.md: OK (no updates needed)
   - .specify/templates/checklist-template.md: OK (no updates needed)
   - .specify/templates/agent-file-template.md: OK (no updates needed)
 Follow-up TODOs: None
@@ -166,6 +168,47 @@ conflicts, increase attack surface, and complicate adoption.
 Mechanical sympathy is best achieved when you control the
 entire code path.
 
+### VIII. Independent Verification
+
+All implementation work MUST be independently verified at
+two levels:
+
+- **Per-task review**: After each implementation task is
+  completed, a separate independent agent MUST review the
+  implementation against the feature requirements (spec.md)
+  and this constitution. The review agent MUST NOT be the
+  same agent that performed the implementation. The review
+  MUST check:
+  - Functional correctness against acceptance scenarios
+  - Compliance with all constitution principles
+  - Test coverage for the implemented behavior
+  - No regressions in existing tests
+
+- **Final evaluation**: After all tasks for a feature are
+  implemented and all tests pass, a comprehensive final
+  evaluation MUST be performed by an independent agent. The
+  final evaluation MUST:
+  - Compare the complete implementation against every
+    functional requirement in the spec
+  - Verify all acceptance scenarios from every user story
+  - Check compliance with every constitution principle
+  - Identify any gaps, deviations, or unaddressed
+    requirements
+  - Produce a written report with findings categorized as
+    PASS, GAP (with severity), or DEVIATION (with
+    justification)
+
+- Review and evaluation findings that identify gaps MUST be
+  addressed before the feature is considered complete.
+  LOW-severity gaps MAY be deferred with documented
+  rationale.
+
+**Rationale**: Self-review is prone to blind spots. An
+independent reviewer catches errors, omissions, and
+constitution violations that the implementer overlooked.
+Two-level verification (per-task + final) provides both
+incremental quality gates and holistic validation.
+
 ## GEDCOM 7 Compliance Requirements
 
 The following GEDCOM 7 specification rules are
@@ -199,6 +242,12 @@ non-negotiable constraints on the parser:
 - **CI**: Automated tests MUST pass on every PR
 - **Versioning**: Semantic versioning (MAJOR.MINOR.PATCH)
   for the library itself
+- **Task verification**: Each implementation task MUST be
+  followed by an independent agent review (per Principle
+  VIII)
+- **Feature completion**: Each feature MUST undergo a final
+  independent evaluation before being marked complete (per
+  Principle VIII)
 
 ## Governance
 
@@ -222,4 +271,4 @@ Complexity MUST be justified. Any deviation from these
 principles MUST be documented with a rationale in the
 relevant plan or spec document.
 
-**Version**: 1.0.0 | **Ratified**: 2026-03-04 | **Last Amended**: 2026-03-04
+**Version**: 1.1.0 | **Ratified**: 2026-03-04 | **Last Amended**: 2026-03-05
