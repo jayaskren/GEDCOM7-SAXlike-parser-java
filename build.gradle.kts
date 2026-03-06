@@ -34,6 +34,13 @@ tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
 }
 
+// Ensure test compilation uses the classpath (not module path) so tests in
+// sub-packages can access public API across packages without module barriers.
+tasks.named<JavaCompile>("compileTestJava") {
+    javaCompiler.set(javaToolchains.compilerFor { })
+    modularity.inferModulePath.set(false)
+}
+
 tasks.withType<Javadoc> {
     options.encoding = "UTF-8"
     (options as StandardJavadocDocletOptions).addStringOption("Xdoclint:none", "-quiet")

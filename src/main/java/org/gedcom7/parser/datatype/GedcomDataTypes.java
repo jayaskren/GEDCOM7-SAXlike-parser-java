@@ -78,55 +78,89 @@ public final class GedcomDataTypes {
     /**
      * Parses a GEDCOM date value string. Returns one of:
      * <ul>
-     *   <li>{@link GedcomDate} for exact dates</li>
+     *   <li>{@link GedcomDate} for exact dates (via {@link GedcomDateRange} with type "EXACT")</li>
      *   <li>{@link GedcomDateRange} for range/approximate dates (BET...AND, BEF, AFT, ABT, CAL, EST)</li>
      *   <li>{@link GedcomDatePeriod} for period dates (FROM...TO, FROM, TO)</li>
      * </ul>
+     * All returned objects implement {@link GedcomDateValue}.
+     *
+     * <p>For unparseable input, returns a {@link GedcomDateValue} with type
+     * {@link DateValueType#UNPARSEABLE} instead of throwing an exception.
      *
      * @param text the date value string
-     * @return a GedcomDate, GedcomDateRange, or GedcomDatePeriod
-     * @throws IllegalArgumentException if the text cannot be parsed
+     * @return a GedcomDateValue (never null)
+     * @throws IllegalArgumentException if the text is null or empty
      */
-    public static Object parseDateValue(String text) {
+    public static GedcomDateValue parseDateValue(String text) {
         if (text == null || text.trim().isEmpty()) {
             throw new IllegalArgumentException("Date value must not be null or empty");
         }
         String trimmed = text.trim();
         String[] tokens = trimmed.split("\\s+");
 
-        // Check for period keywords
-        if (tokens[0].equals("FROM")) {
-            return parsePeriod(tokens, 1);
-        }
-        if (tokens[0].equals("TO")) {
-            GedcomDateResult toDate = parseSingleDate(tokens, 1);
-            return new GedcomDatePeriod(null, toDate.date, "TO");
-        }
+        try {
+            // Check for period keywords
+            if (tokens[0].equals("FROM")) {
+                return parsePeriod(tokens, 1, trimmed);
+            }
+            if (tokens[0].equals("TO")) {
+                GedcomDateResult toDate = parseSingleDate(tokens, 1);
+                return new GedcomDatePeriod(null, toDate.date, "TO", trimmed);
+            }
 
-        // Check for range/approximate keywords
-        if (tokens[0].equals("BET")) {
-            return parseBetweenRange(tokens, 1);
-        }
-        if (tokens[0].equals("BEF")) {
-            GedcomDateResult befDate = parseSingleDate(tokens, 1);
-            return new GedcomDateRange(null, befDate.date, "BEF");
-        }
-        if (tokens[0].equals("AFT")) {
-            GedcomDateResult aftDate = parseSingleDate(tokens, 1);
-            return new GedcomDateRange(aftDate.date, null, "AFT");
-        }
-        if (tokens[0].equals("ABT") || tokens[0].equals("CAL") || tokens[0].equals("EST")) {
-            String type = tokens[0];
-            GedcomDateResult approxDate = parseSingleDate(tokens, 1);
-            return new GedcomDateRange(approxDate.date, null, type);
-        }
+            // Check for range/approximate keywords
+            if (tokens[0].equals("BET")) {
+                return parseBetweenRange(tokens, 1, trimmed);
+            }
+            if (tokens[0].equals("BEF")) {
+                GedcomDateResult befDate = parseSingleDate(tokens, 1);
+                return new GedcomDateRange(null, befDate.date, "BEF", trimmed);
+            }
+            if (tokens[0].equals("AFT")) {
+                GedcomDateResult aftDate = parseSingleDate(tokens, 1);
+                return new GedcomDateRange(aftDate.date, null, "AFT", trimmed);
+            }
+            if (tokens[0].equals("ABT") || tokens[0].equals("CAL") || tokens[0].equals("EST")) {
+                String type = tokens[0];
+                GedcomDateResult approxDate = parseSingleDate(tokens, 1);
+                return new GedcomDateRange(approxDate.date, null, type, trimmed);
+            }
 
-        // Otherwise it is an exact date
-        GedcomDateResult exactDate = parseSingleDate(tokens, 0);
-        return new GedcomDateRange(exactDate.date, null, "EXACT");
+            // Otherwise it is an exact date
+            GedcomDateResult exactDate = parseSingleDate(tokens, 0);
+            return new GedcomDateRange(exactDate.date, null, "EXACT", trimmed);
+        } catch (IllegalArgumentException e) {
+            return new UnparseableDateValue(trimmed);
+        }
     }
 
-    private static GedcomDatePeriod parsePeriod(String[] tokens, int startPos) {
+    /**
+     * Internal implementation for unparseable date values.
+     */
+    static final class UnparseableDateValue implements GedcomDateValue {
+        private final String originalText;
+
+        UnparseableDateValue(String originalText) {
+            this.originalText = originalText;
+        }
+
+        @Override
+        public DateValueType getType() {
+            return DateValueType.UNPARSEABLE;
+        }
+
+        @Override
+        public String getOriginalText() {
+            return originalText;
+        }
+
+        @Override
+        public String toString() {
+            return "UnparseableDateValue{originalText='" + originalText + "'}";
+        }
+    }
+
+    private static GedcomDatePeriod parsePeriod(String[] tokens, int startPos, String originalText) {
         // FROM date [TO date]
         // Find "TO" keyword to split
         int toIndex = -1;
@@ -140,17 +174,17 @@ public final class GedcomDataTypes {
         if (toIndex == -1) {
             // FROM only
             GedcomDateResult fromDate = parseSingleDate(tokens, startPos);
-            return new GedcomDatePeriod(fromDate.date, null, "FROM");
+            return new GedcomDatePeriod(fromDate.date, null, "FROM", originalText);
         } else {
             // FROM...TO
             String[] fromTokens = Arrays.copyOfRange(tokens, 0, toIndex);
             GedcomDateResult fromDate = parseSingleDate(fromTokens, startPos);
             GedcomDateResult toDate = parseSingleDate(tokens, toIndex + 1);
-            return new GedcomDatePeriod(fromDate.date, toDate.date, "FROM_TO");
+            return new GedcomDatePeriod(fromDate.date, toDate.date, "FROM_TO", originalText);
         }
     }
 
-    private static GedcomDateRange parseBetweenRange(String[] tokens, int startPos) {
+    private static GedcomDateRange parseBetweenRange(String[] tokens, int startPos, String originalText) {
         // BET date AND date
         int andIndex = -1;
         for (int i = startPos; i < tokens.length; i++) {
@@ -165,7 +199,7 @@ public final class GedcomDataTypes {
         String[] startTokens = Arrays.copyOfRange(tokens, 0, andIndex);
         GedcomDateResult startDate = parseSingleDate(startTokens, startPos);
         GedcomDateResult endDate = parseSingleDate(tokens, andIndex + 1);
-        return new GedcomDateRange(startDate.date, endDate.date, "BET_AND");
+        return new GedcomDateRange(startDate.date, endDate.date, "BET_AND", originalText);
     }
 
     /**

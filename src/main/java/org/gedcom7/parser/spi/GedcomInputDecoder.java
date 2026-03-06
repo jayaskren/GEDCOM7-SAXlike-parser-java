@@ -1,15 +1,17 @@
-package org.gedcom7.parser.internal;
+package org.gedcom7.parser.spi;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 
 /**
- * Strategy interface for decoding a GEDCOM byte stream into
- * characters. Implementations handle encoding detection (e.g.,
- * BOM stripping for UTF-8).
+ * SPI for custom byte-to-character decoding of GEDCOM streams.
+ * Implementations handle encoding detection (e.g., BOM stripping
+ * for UTF-8) and wrap raw byte streams as character Readers.
  *
- * <p>This is an internal interface and not part of the public API.
+ * <p>This interface is part of the public SPI. Implementations
+ * should be placed in the {@code org.gedcom7.parser.internal}
+ * package or in user-provided packages.
  */
 public interface GedcomInputDecoder {
 

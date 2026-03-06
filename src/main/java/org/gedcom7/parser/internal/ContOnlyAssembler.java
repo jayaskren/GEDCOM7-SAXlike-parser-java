@@ -1,5 +1,7 @@
 package org.gedcom7.parser.internal;
 
+import org.gedcom7.parser.spi.PayloadAssembler;
+
 /**
  * GEDCOM 7 payload assembler. Recognises {@code CONT} as
  * a continuation pseudo-structure and joins payloads with

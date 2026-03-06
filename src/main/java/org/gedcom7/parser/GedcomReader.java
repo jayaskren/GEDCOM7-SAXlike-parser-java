@@ -1,16 +1,17 @@
 package org.gedcom7.parser;
 
 import org.gedcom7.parser.internal.AllAtEscapeStrategy;
-import org.gedcom7.parser.internal.AtEscapeStrategy;
 import org.gedcom7.parser.internal.BomDetectingDecoder;
 import org.gedcom7.parser.internal.ContConcAssembler;
 import org.gedcom7.parser.internal.ContOnlyAssembler;
-import org.gedcom7.parser.internal.GedcomInputDecoder;
+import org.gedcom7.parser.internal.CountingInputStream;
 import org.gedcom7.parser.internal.GedcomLine;
 import org.gedcom7.parser.internal.GedcomLineTokenizer;
 import org.gedcom7.parser.internal.LeadingAtEscapeStrategy;
-import org.gedcom7.parser.internal.PayloadAssembler;
 import org.gedcom7.parser.internal.Utf8InputDecoder;
+import org.gedcom7.parser.spi.AtEscapeStrategy;
+import org.gedcom7.parser.spi.GedcomInputDecoder;
+import org.gedcom7.parser.spi.PayloadAssembler;
 import org.gedcom7.parser.validation.StructureDefinitions;
 
 import java.io.IOException;
@@ -62,13 +63,13 @@ public final class GedcomReader implements AutoCloseable {
         this.handler = handler;
         this.config = config;
         this.decoder = config.getInputDecoderOrNull() != null
-                ? (GedcomInputDecoder) config.getInputDecoderOrNull()
+                ? config.getInputDecoderOrNull()
                 : new Utf8InputDecoder();
         this.assembler = config.getPayloadAssemblerOrNull() != null
-                ? (PayloadAssembler) config.getPayloadAssemblerOrNull()
+                ? config.getPayloadAssemblerOrNull()
                 : new ContOnlyAssembler();
         this.atEscape = config.getAtEscapeStrategyOrNull() != null
-                ? (AtEscapeStrategy) config.getAtEscapeStrategyOrNull()
+                ? config.getAtEscapeStrategyOrNull()
                 : new LeadingAtEscapeStrategy();
     }
 
@@ -78,8 +79,10 @@ public final class GedcomReader implements AutoCloseable {
      * @throws GedcomFatalException if an unrecoverable error occurs
      */
     public void parse() throws GedcomFatalException {
-        try (Reader reader = decoder.decode(input)) {
-            doParse(reader);
+        CountingInputStream countingInput = new CountingInputStream(input);
+        try (Reader reader = decoder.decode(countingInput)) {
+            long initialByteOffset = countingInput.getBytesRead();
+            doParse(reader, countingInput, initialByteOffset);
         } catch (IOException e) {
             GedcomParseError err = new GedcomParseError(
                     GedcomParseError.Severity.FATAL, 0, 0, "I/O error: " + e.getMessage(), null);
@@ -88,8 +91,11 @@ public final class GedcomReader implements AutoCloseable {
         }
     }
 
-    private void doParse(Reader reader) {
-        GedcomLineTokenizer tokenizer = new GedcomLineTokenizer(reader, config.getMaxLineLength());
+    private void doParse(Reader reader, CountingInputStream countingInput,
+                         long initialByteOffset) {
+        GedcomLineTokenizer tokenizer = new GedcomLineTokenizer(
+                reader, config.getMaxLineLength(),
+                countingInput::getBytesRead, initialByteOffset);
         GedcomLine line = new GedcomLine();
 
         // Phase 1: Pre-scan HEAD to build GedcomHeaderInfo
@@ -241,6 +247,21 @@ public final class GedcomReader implements AutoCloseable {
         }
     }
 
+    // ─── Known level-0 record types ─────────────────────────
+
+    private static final Set<String> KNOWN_LEVEL0_TAGS = new HashSet<>();
+    static {
+        KNOWN_LEVEL0_TAGS.add("HEAD");
+        KNOWN_LEVEL0_TAGS.add("TRLR");
+        KNOWN_LEVEL0_TAGS.add("INDI");
+        KNOWN_LEVEL0_TAGS.add("FAM");
+        KNOWN_LEVEL0_TAGS.add("OBJE");
+        KNOWN_LEVEL0_TAGS.add("REPO");
+        KNOWN_LEVEL0_TAGS.add("SNOTE");
+        KNOWN_LEVEL0_TAGS.add("SOUR");
+        KNOWN_LEVEL0_TAGS.add("SUBM");
+    }
+
     // ─── Level tracking for nesting ────────────────────────
 
     private static final class StackEntry {
@@ -322,6 +343,7 @@ public final class GedcomReader implements AutoCloseable {
             StackEntry top = levelStack.get(levelStack.size() - 1);
             if (top.level >= level) {
                 levelStack.remove(levelStack.size() - 1);
+                checkMinCardinality(top);
                 if (top.isRecord) {
                     handler.endRecord(top.tag);
                 } else {
@@ -397,6 +419,8 @@ public final class GedcomReader implements AutoCloseable {
                     reportWarning(p, "Cross-reference @" + p.getXref()
                             + "@ exceeds 22-character GEDCOM 5.5.5 limit");
                 }
+                // Validate xref identifier characters (US6)
+                validateXrefIdentifier(p, p.getXref());
             }
             // TRLR must not have value or xref (FR-054)
             if ("TRLR".equals(p.getTag())) {
@@ -407,8 +431,15 @@ public final class GedcomReader implements AutoCloseable {
                     reportError(p, "TRLR must not have a cross-reference identifier");
                 }
             }
+            // Validate level-0 record type (US9)
+            if (config.isStructureValidationEnabled()) {
+                String tag = p.getTag();
+                if (tag != null && !KNOWN_LEVEL0_TAGS.contains(tag) && !tag.startsWith("_")) {
+                    reportWarning(p, "Unknown record type at level 0: " + tag);
+                }
+            }
             String contextId = StructureDefinitions.recordContext(p.getTag());
-            handler.startRecord(p.getLevel(), p.getXref(), p.getTag());
+            handler.startRecord(p.getLevel(), p.getXref(), p.getTag(), value);
             levelStack.add(new StackEntry(p.getLevel(), p.getTag(), true, contextId));
         } else {
             // Track xref reference (US4)
@@ -422,6 +453,8 @@ public final class GedcomReader implements AutoCloseable {
                         && referencedXrefs.size() < config.getMaxXrefCount()) {
                     referencedXrefs.add(ref);
                 }
+                // Validate pointer reference xref characters (US6)
+                validateXrefIdentifier(p, ref);
             }
 
             // Structure validation (Phase 11)
@@ -442,6 +475,7 @@ public final class GedcomReader implements AutoCloseable {
         flushPending();
         while (!levelStack.isEmpty()) {
             StackEntry top = levelStack.remove(levelStack.size() - 1);
+            checkMinCardinality(top);
             if (top.isRecord) {
                 handler.endRecord(top.tag);
             } else {
@@ -529,6 +563,44 @@ public final class GedcomReader implements AutoCloseable {
             }
         }
         return null;
+    }
+
+    // ─── Cross-reference identifier validation (US6) ─────────
+
+    /**
+     * Validates an xref identifier against GEDCOM 7 character rules.
+     * Characters must be in U+0021–U+007E excluding @ (U+0040) and # (U+0023).
+     * Identifier must be 1-20 characters long (excluding the @ delimiters).
+     * Skips validation for @VOID@ (special null pointer).
+     */
+    private void validateXrefIdentifier(GedcomLine line, String xref) {
+        if (!config.isStructureValidationEnabled()) return;
+        if (xref == null || "VOID".equals(xref)) return;
+
+        if (xref.isEmpty()) {
+            reportWarning(line, "Invalid xref: identifier is empty (between @ delimiters)");
+            return;
+        }
+
+        if (xref.length() > 20) {
+            reportWarning(line, "Invalid xref @" + xref
+                    + "@: identifier exceeds 20 characters (" + xref.length() + ")");
+        }
+
+        for (int i = 0; i < xref.length(); i++) {
+            char ch = xref.charAt(i);
+            if (ch < 0x0021 || ch > 0x007E || ch == '@' || ch == '#') {
+                String charDesc;
+                if (ch < 0x20) {
+                    charDesc = "U+" + String.format("%04X", (int) ch);
+                } else {
+                    charDesc = "'" + ch + "' (U+" + String.format("%04X", (int) ch) + ")";
+                }
+                reportWarning(line, "Invalid xref character " + charDesc
+                        + " in @" + xref + "@ at position " + i);
+                return; // report once per xref
+            }
+        }
     }
 
     // ─── GEDCOM 5.5.5 validation ─────────────────────────────
@@ -663,6 +735,36 @@ public final class GedcomReader implements AutoCloseable {
         }
 
         return childStructureId;
+    }
+
+    // ─── Min-cardinality validation ─────────────────────────
+
+    /**
+     * Checks that all required children ({1:1} or {1:M}) of the closing
+     * structure are present. Emits a warning for each missing required child.
+     * Skipped when structure validation is disabled or the context is unknown.
+     */
+    private void checkMinCardinality(StackEntry entry) {
+        if (!config.isStructureValidationEnabled()) {
+            return;
+        }
+        if (entry.contextId == null) {
+            return;
+        }
+
+        Map<String, String> required = StructureDefinitions.getRequiredChildren(entry.contextId);
+        for (Map.Entry<String, String> req : required.entrySet()) {
+            String childStructureId = req.getKey();
+            String cardinality = req.getValue();
+            int count = entry.childCounts.getOrDefault(childStructureId, 0);
+            if (count == 0) {
+                handler.warning(new GedcomParseError(
+                        GedcomParseError.Severity.WARNING, 0, 0,
+                        "Missing required child structure " + childStructureId
+                                + " (cardinality " + cardinality + ") under " + entry.tag,
+                        null));
+            }
+        }
     }
 
     // ─── Utility ───────────────────────────────────────────

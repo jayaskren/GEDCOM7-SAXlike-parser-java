@@ -1,5 +1,7 @@
 package org.gedcom7.parser.internal;
 
+import org.gedcom7.parser.spi.GedcomInputDecoder;
+
 import java.io.*;
 import java.nio.charset.*;
 

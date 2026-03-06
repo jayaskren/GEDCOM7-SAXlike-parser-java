@@ -1,5 +1,7 @@
 package org.gedcom7.parser.internal;
 
+import org.gedcom7.parser.spi.GedcomInputDecoder;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;

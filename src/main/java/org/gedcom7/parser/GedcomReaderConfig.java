@@ -3,6 +3,9 @@ package org.gedcom7.parser;
 import org.gedcom7.parser.internal.AllAtEscapeStrategy;
 import org.gedcom7.parser.internal.BomDetectingDecoder;
 import org.gedcom7.parser.internal.ContConcAssembler;
+import org.gedcom7.parser.spi.AtEscapeStrategy;
+import org.gedcom7.parser.spi.GedcomInputDecoder;
+import org.gedcom7.parser.spi.PayloadAssembler;
 
 /**
  * Immutable configuration for {@link GedcomReader}.
@@ -23,9 +26,9 @@ public final class GedcomReaderConfig {
     private final int maxXrefCount;
     private final boolean structureValidation;
     private final boolean autoDetect;
-    final Object inputDecoder;
-    final Object payloadAssembler;
-    final Object atEscapeStrategy;
+    final GedcomInputDecoder inputDecoder;
+    final PayloadAssembler payloadAssembler;
+    final AtEscapeStrategy atEscapeStrategy;
 
     private GedcomReaderConfig(Builder builder) {
         this.strict = builder.strict;
@@ -110,9 +113,9 @@ public final class GedcomReaderConfig {
     public int getMaxXrefCount() { return maxXrefCount; }
     public boolean isStructureValidationEnabled() { return structureValidation; }
     public boolean isAutoDetect() { return autoDetect; }
-    Object getInputDecoderOrNull() { return inputDecoder; }
-    Object getPayloadAssemblerOrNull() { return payloadAssembler; }
-    Object getAtEscapeStrategyOrNull() { return atEscapeStrategy; }
+    public GedcomInputDecoder getInputDecoderOrNull() { return inputDecoder; }
+    public PayloadAssembler getPayloadAssemblerOrNull() { return payloadAssembler; }
+    public AtEscapeStrategy getAtEscapeStrategyOrNull() { return atEscapeStrategy; }
 
     /** Returns a new builder pre-populated with this config's values. */
     public Builder toBuilder() {
@@ -137,9 +140,9 @@ public final class GedcomReaderConfig {
         private int maxXrefCount = DEFAULT_MAX_XREF_COUNT;
         private boolean structureValidation = false;
         private boolean autoDetect = false;
-        Object inputDecoder;
-        Object payloadAssembler;
-        Object atEscapeStrategy;
+        GedcomInputDecoder inputDecoder;
+        PayloadAssembler payloadAssembler;
+        AtEscapeStrategy atEscapeStrategy;
 
         public Builder strict(boolean strict) {
             this.strict = strict;
@@ -184,17 +187,17 @@ public final class GedcomReaderConfig {
             return this;
         }
 
-        Builder inputDecoder(Object decoder) {
+        public Builder inputDecoder(GedcomInputDecoder decoder) {
             this.inputDecoder = decoder;
             return this;
         }
 
-        Builder payloadAssembler(Object assembler) {
+        public Builder payloadAssembler(PayloadAssembler assembler) {
             this.payloadAssembler = assembler;
             return this;
         }
 
-        Builder atEscapeStrategy(Object strategy) {
+        public Builder atEscapeStrategy(AtEscapeStrategy strategy) {
             this.atEscapeStrategy = strategy;
             return this;
         }
