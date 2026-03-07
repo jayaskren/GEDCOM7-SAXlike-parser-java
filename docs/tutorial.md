@@ -161,6 +161,17 @@ For the BIRT structure above, you would see:
 
 This is useful when you need to collect all children of a structure before processing it.
 
+## Using Tag and Value Constants
+
+Instead of comparing tags with raw strings like `"INDI"` or `"NAME"`, use the `GedcomTag` and `GedcomValue` constants. This gives you IDE autocomplete, compile-time safety, and self-documenting code:
+
+- **Record tags:** `GedcomTag.INDI`, `GedcomTag.FAM`, `GedcomTag.SOUR`, etc.
+- **Substructure tags:** `GedcomTag.Indi.NAME`, `GedcomTag.Indi.SEX`, `GedcomTag.Fam.HUSB`, etc.
+- **Event substructure tags:** `GedcomTag.Indi.Birt.DATE`, `GedcomTag.Fam.Marr.PLAC`, etc.
+- **Enumeration values:** `GedcomValue.Sex.MALE`, `GedcomValue.Role.WITNESS`, `GedcomValue.NameType.MAIDEN`, etc.
+
+All constants are `public static final String`, so they work in `switch` statements and `equals()` comparisons. The remaining examples in this tutorial use these constants.
+
 ## Step 4: Extracting Individuals
 
 Here is a practical example -- extracting all individuals and their names:
@@ -188,8 +199,8 @@ public class ListPeople {
             public void startStructure(int level, String xref, String tag,
                                        String value, boolean isPointer) {
                 // Capture the NAME of each INDI record
-                if ("INDI".equals(currentRecordTag)
-                        && "NAME".equals(tag) && level == 1) {
+                if (GedcomTag.INDI.equals(currentRecordTag)
+                        && GedcomTag.Indi.NAME.equals(tag) && level == 1) {
                     people.put(currentXref, value);
                 }
             }
@@ -445,11 +456,11 @@ public class FamilyTreeBuilder {
                 currentXref = xref;
                 currentSubTag = null;
 
-                if ("INDI".equals(tag)) {
+                if (GedcomTag.INDI.equals(tag)) {
                     Person p = new Person();
                     p.xref = xref;
                     people.put(xref, p);
-                } else if ("FAM".equals(tag)) {
+                } else if (GedcomTag.FAM.equals(tag)) {
                     Family f = new Family();
                     f.xref = xref;
                     families.put(xref, f);
@@ -459,28 +470,28 @@ public class FamilyTreeBuilder {
             @Override
             public void startStructure(int level, String xref, String tag,
                                        String value, boolean isPointer) {
-                if ("INDI".equals(currentRecordTag)) {
+                if (GedcomTag.INDI.equals(currentRecordTag)) {
                     Person p = people.get(currentXref);
                     if (level == 1) {
                         currentSubTag = tag;
-                        if ("NAME".equals(tag)) p.name = value;
-                        if ("SEX".equals(tag)) p.sex = value;
-                    } else if (level == 2 && "BIRT".equals(currentSubTag)) {
-                        if ("DATE".equals(tag)) p.birthDate = value;
-                        if ("PLAC".equals(tag)) p.birthPlace = value;
+                        if (GedcomTag.Indi.NAME.equals(tag)) p.name = value;
+                        if (GedcomTag.Indi.SEX.equals(tag)) p.sex = value;
+                    } else if (level == 2 && GedcomTag.Indi.BIRT.equals(currentSubTag)) {
+                        if (GedcomTag.Indi.Birt.DATE.equals(tag)) p.birthDate = value;
+                        if (GedcomTag.Indi.Birt.PLAC.equals(tag)) p.birthPlace = value;
                     }
-                } else if ("FAM".equals(currentRecordTag)) {
+                } else if (GedcomTag.FAM.equals(currentRecordTag)) {
                     Family f = families.get(currentXref);
                     if (level == 1) {
                         currentSubTag = tag;
-                        if ("HUSB".equals(tag) && isPointer) {
+                        if (GedcomTag.Fam.HUSB.equals(tag) && isPointer) {
                             f.husbandXref = stripAt(value);
                         }
-                        if ("WIFE".equals(tag) && isPointer) {
+                        if (GedcomTag.Fam.WIFE.equals(tag) && isPointer) {
                             f.wifeXref = stripAt(value);
                         }
-                    } else if (level == 2 && "MARR".equals(currentSubTag)) {
-                        if ("DATE".equals(tag)) f.marriageDate = value;
+                    } else if (level == 2 && GedcomTag.Fam.MARR.equals(currentSubTag)) {
+                        if (GedcomTag.Fam.Marr.DATE.equals(tag)) f.marriageDate = value;
                     }
                 }
             }
@@ -540,6 +551,8 @@ GedcomReaderConfig secure = new GedcomReaderConfig.Builder()
 | Parse a file | `new GedcomReader(inputStream, handler, config)` then `reader.parse()` |
 | Receive events | Extend `GedcomHandler`, override callbacks |
 | Configure parsing | `GedcomReaderConfig.gedcom7()`, `.gedcom7Strict()`, or `Builder` |
+| Compare tags | `GedcomTag.INDI`, `GedcomTag.Indi.NAME`, `GedcomTag.Indi.Birt.DATE`, etc. |
+| Compare enum values | `GedcomValue.Sex.MALE`, `GedcomValue.Role.WITNESS`, etc. |
 | Read header metadata | Override `startDocument(GedcomHeaderInfo)` |
 | Parse date strings | `GedcomDataTypes.parseDateValue(value)` |
 | Parse name strings | `GedcomDataTypes.parsePersonalName(value)` |
