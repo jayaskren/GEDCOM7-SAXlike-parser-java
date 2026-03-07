@@ -53,6 +53,8 @@ This document describes the internal design of the GEDCOM 7 SAX-like parser.
 | `GedcomVersion` | Parsed version number (e.g., 7.0, 5.5.1). Provides `isGedcom7()` and `isGedcom5()`. |
 | `GedcomParseError` | Describes a warning, error, or fatal error. Includes severity, line number, byte offset, message, and raw line content. |
 | `GedcomFatalException` | Unchecked exception wrapping a `GedcomParseError`. Thrown in strict mode or for unrecoverable errors. |
+| `GedcomTag` | String constants for GEDCOM tags, organized by record type. Nested classes: `Indi`, `Fam`, `Sour`, `Repo`, `Obje`, `Snote`, `Subm`, `Head`, plus event sub-classes like `Indi.Birt`, `Fam.Marr`. |
+| `GedcomValue` | String constants for GEDCOM enumeration values. Nested classes: `Sex`, `NameType`, `Pedi`, `Resn`, `Role`, `Medi`, `Adop`. |
 
 ### Internal Layer (`org.gedcom7.parser.internal`)
 

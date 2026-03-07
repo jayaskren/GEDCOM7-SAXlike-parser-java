@@ -12,6 +12,7 @@ Auto-generated from all feature plans. Last updated: 2026-03-04
 - N/A (streaming writer) (006-writer-gaps)
 - Java 11+ (matching existing parser/writer) + None at runtime (zero-dependency library — Constitution Principle VII) (007-gedcom-version-converter)
 - N/A (streaming converter — InputStream to OutputStream) (007-gedcom-version-converter)
+- Java 11+ (matching existing project) + None at runtime (zero-dependency library — Constitution Principle VII) (008-tag-value-constants)
 
 - (001-gedcom7-sax-parser)
 
@@ -31,9 +32,9 @@ tests/
 : Follow standard conventions
 
 ## Recent Changes
+- 008-tag-value-constants: Added Java 11+ (matching existing project) + None at runtime (zero-dependency library — Constitution Principle VII)
 - 007-gedcom-version-converter: Added Java 11+ (matching existing parser/writer) + None at runtime (zero-dependency library — Constitution Principle VII)
 - 006-writer-gaps: Added Java 11+ + None at runtime (zero-dependency library)
-- 005-parser-gaps-remediation: Added Java 11+ + None at runtime (zero-dependency library)
 
 
 <!-- MANUAL ADDITIONS START -->
