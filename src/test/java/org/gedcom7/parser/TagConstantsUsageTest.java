@@ -168,6 +168,62 @@ class TagConstantsUsageTest {
     }
 
     @Test
+    void parsePlaceCoordinatesWithCommonConstants() {
+        final String[] latitude = {null};
+        final String[] longitude = {null};
+        final String[] placeName = {null};
+        final String[] currentSubTag = {null};
+        final String[] currentLevel2Tag = {null};
+        final String[] currentRecordTag = {null};
+
+        GedcomHandler handler = new GedcomHandler() {
+            @Override
+            public void startRecord(int level, String xref, String tag) {
+                currentRecordTag[0] = tag;
+                currentSubTag[0] = null;
+                currentLevel2Tag[0] = null;
+            }
+
+            @Override
+            public void startStructure(int level, String xref, String tag,
+                                       String value, boolean isPointer) {
+                if (!GedcomTag.INDI.equals(currentRecordTag[0])) return;
+
+                if (level == 1) {
+                    currentSubTag[0] = tag;
+                } else if (level == 2) {
+                    currentLevel2Tag[0] = tag;
+                    if (GedcomTag.Indi.BIRT.equals(currentSubTag[0])
+                            && GedcomTag.Indi.Birt.PLAC.equals(tag)) {
+                        placeName[0] = value;
+                    }
+                } else if (level == 3) {
+                    if (GedcomTag.Plac.MAP.equals(tag)) {
+                        currentLevel2Tag[0] = tag;
+                    }
+                } else if (level == 4) {
+                    if (GedcomTag.Plac.MAP.equals(currentLevel2Tag[0])) {
+                        if (GedcomTag.Map.LATI.equals(tag)) {
+                            latitude[0] = value;
+                        } else if (GedcomTag.Map.LONG.equals(tag)) {
+                            longitude[0] = value;
+                        }
+                    }
+                }
+            }
+        };
+
+        try (GedcomReader reader = new GedcomReader(
+                resource("place-coordinates.ged"), handler, GedcomReaderConfig.gedcom7())) {
+            reader.parse();
+        }
+
+        assertEquals("Springfield, IL, USA", placeName[0]);
+        assertEquals("N39.7817", latitude[0]);
+        assertEquals("W89.6501", longitude[0]);
+    }
+
+    @Test
     void allRecordTypesIdentifiedWithConstants() {
         Map<String, Integer> recordCounts = new HashMap<>();
 

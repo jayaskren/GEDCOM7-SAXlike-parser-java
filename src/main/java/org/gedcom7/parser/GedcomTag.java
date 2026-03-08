@@ -220,11 +220,14 @@ public final class GedcomTag {
         public static final class Birt {
             private Birt() {}
             /** Date of the birth.
-             * @see GedcomDataTypes#parseDateValue(String) */
+             * @see GedcomDataTypes#parseDateValue(String)
+             * @see Date */
             public static final String DATE = "DATE";
-            /** Place where the birth occurred. */
+            /** Place where the birth occurred.
+             * @see Plac */
             public static final String PLAC = "PLAC";
-            /** Address where the birth occurred. */
+            /** Address where the birth occurred.
+             * @see Addr */
             public static final String ADDR = "ADDR";
             /** Age of the individual at the time of birth (typically for parent's age).
              * @see GedcomDataTypes#parseAge(String) */
@@ -544,11 +547,14 @@ public final class GedcomTag {
         public static final class Marr {
             private Marr() {}
             /** Date of the marriage.
-             * @see GedcomDataTypes#parseDateValue(String) */
+             * @see GedcomDataTypes#parseDateValue(String)
+             * @see Date */
             public static final String DATE = "DATE";
-            /** Place where the marriage occurred. */
+            /** Place where the marriage occurred.
+             * @see Plac */
             public static final String PLAC = "PLAC";
-            /** Address of the marriage location. */
+            /** Address of the marriage location.
+             * @see Addr */
             public static final String ADDR = "ADDR";
             /** Responsible agency or institution. */
             public static final String AGNC = "AGNC";
@@ -920,5 +926,326 @@ public final class GedcomTag {
         public static final String SOUR = "SOUR";
         /** Submitter of the file. */
         public static final String SUBM = "SUBM";
+    }
+
+    // ─── Common substructure tag constants ───────────────────
+
+    // ─── Place (PLAC) substructures ─────────────────────────
+
+    /**
+     * Substructure tags valid inside a Place (PLAC) structure.
+     *
+     * <p>A PLAC structure appears as a substructure of events such as
+     * {@link Indi.Birt#PLAC} or {@link Fam.Marr#PLAC}.
+     */
+    public static final class Plac {
+        private Plac() {}
+
+        /** Geographic coordinates container.
+         * @see Map */
+        public static final String MAP = "MAP";
+        /** Place hierarchy format. */
+        public static final String FORM = "FORM";
+        /** Language of place name. */
+        public static final String LANG = "LANG";
+        /** Translated place name. */
+        public static final String TRAN = "TRAN";
+        /** External identifier. */
+        public static final String EXID = "EXID";
+        /** Note reference. */
+        public static final String NOTE = "NOTE";
+        /** Shared note reference. */
+        public static final String SNOTE = "SNOTE";
+        /** Source citation. */
+        public static final String SOUR = "SOUR";
+    }
+
+    // ─── Map (MAP) substructures ────────────────────────────
+
+    /**
+     * Substructure tags valid inside a Map (MAP) structure.
+     *
+     * <p>A MAP structure appears as a substructure of {@link Plac#MAP}.
+     */
+    public static final class Map {
+        private Map() {}
+
+        /** Latitude coordinate. */
+        public static final String LATI = "LATI";
+        /** Longitude coordinate. */
+        public static final String LONG = "LONG";
+    }
+
+    // ─── Date (DATE) substructures ──────────────────────────
+
+    /**
+     * Substructure tags valid inside a Date (DATE) structure.
+     *
+     * <p>A DATE structure appears as a substructure of events and
+     * other structures such as {@link Chan#DATE} or {@link Crea#DATE}.
+     */
+    public static final class Date {
+        private Date() {}
+
+        /** Time of day. */
+        public static final String TIME = "TIME";
+        /** Narrative date phrase. */
+        public static final String PHRASE = "PHRASE";
+    }
+
+    // ─── Address (ADDR) substructures ───────────────────────
+
+    /**
+     * Substructure tags valid inside an Address (ADDR) structure.
+     *
+     * <p>An ADDR structure appears as a substructure of events,
+     * repository records, and submitter records.
+     */
+    public static final class Addr {
+        private Addr() {}
+
+        /** First address line. */
+        public static final String ADR1 = "ADR1";
+        /** Second address line. */
+        public static final String ADR2 = "ADR2";
+        /** Third address line. */
+        public static final String ADR3 = "ADR3";
+        /** City name. */
+        public static final String CITY = "CITY";
+        /** State or province. */
+        public static final String STAE = "STAE";
+        /** Postal code. */
+        public static final String POST = "POST";
+        /** Country name. */
+        public static final String CTRY = "CTRY";
+    }
+
+    // ─── File (FILE) substructures ──────────────────────────
+
+    /**
+     * Substructure tags valid inside a File (FILE) structure.
+     *
+     * <p>A FILE structure appears as a substructure of multimedia
+     * object records ({@link Obje}).
+     */
+    public static final class File {
+        private File() {}
+
+        /** File format/media type. */
+        public static final String FORM = "FORM";
+        /** Descriptive title. */
+        public static final String TITL = "TITL";
+        /** Translated file reference. */
+        public static final String TRAN = "TRAN";
+    }
+
+    // ─── Form (FORM) substructures ──────────────────────────
+
+    /**
+     * Substructure tags valid inside a Form (FORM) structure.
+     *
+     * <p>A FORM structure appears as a substructure of {@link File#FORM}
+     * or {@link Plac#FORM}.
+     */
+    public static final class Form {
+        private Form() {}
+
+        /** Source medium type. */
+        public static final String MEDI = "MEDI";
+    }
+
+    // ─── GEDC substructures ─────────────────────────────────
+
+    /**
+     * Substructure tags valid inside a GEDC structure.
+     *
+     * <p>A GEDC structure appears as a substructure of the
+     * header record ({@link Head#GEDC}).
+     */
+    public static final class Gedc {
+        private Gedc() {}
+
+        /** GEDCOM version number. */
+        public static final String VERS = "VERS";
+    }
+
+    // ─── Personal Name (NAME) substructures ─────────────────
+
+    /**
+     * Substructure tags valid inside a personal Name (NAME) structure.
+     *
+     * <p>A NAME structure appears as a substructure of individual
+     * records ({@link Indi#NAME}).
+     */
+    public static final class Name {
+        private Name() {}
+
+        /** Given (first) names. */
+        public static final String GIVN = "GIVN";
+        /** Surname. */
+        public static final String SURN = "SURN";
+        /** Name prefix (e.g., Dr.). */
+        public static final String NPFX = "NPFX";
+        /** Name suffix (e.g., Jr.). */
+        public static final String NSFX = "NSFX";
+        /** Surname prefix (e.g., von). */
+        public static final String SPFX = "SPFX";
+        /** Nickname. */
+        public static final String NICK = "NICK";
+        /** Name type. */
+        public static final String TYPE = "TYPE";
+        /** Translated name. */
+        public static final String TRAN = "TRAN";
+        /** Note reference. */
+        public static final String NOTE = "NOTE";
+        /** Shared note reference. */
+        public static final String SNOTE = "SNOTE";
+        /** Source citation. */
+        public static final String SOUR = "SOUR";
+    }
+
+    // ─── Reference Number (REFN) substructures ──────────────
+
+    /**
+     * Substructure tags valid inside a Reference Number (REFN) structure.
+     */
+    public static final class Refn {
+        private Refn() {}
+
+        /** Reference number type. */
+        public static final String TYPE = "TYPE";
+    }
+
+    // ─── External Identifier (EXID) substructures ───────────
+
+    /**
+     * Substructure tags valid inside an External Identifier (EXID) structure.
+     */
+    public static final class Exid {
+        private Exid() {}
+
+        /** External identifier type. */
+        public static final String TYPE = "TYPE";
+    }
+
+    // ─── Association (ASSO) substructures ────────────────────
+
+    /**
+     * Substructure tags valid inside an Association (ASSO) structure.
+     *
+     * <p>An ASSO structure appears as a substructure of individual
+     * records ({@link Indi#ASSO}).
+     */
+    public static final class Asso {
+        private Asso() {}
+
+        /** Role in the association. */
+        public static final String ROLE = "ROLE";
+        /** Descriptive phrase. */
+        public static final String PHRASE = "PHRASE";
+        /** Note reference. */
+        public static final String NOTE = "NOTE";
+        /** Shared note reference. */
+        public static final String SNOTE = "SNOTE";
+        /** Source citation. */
+        public static final String SOUR = "SOUR";
+    }
+
+    // ─── Family Child (FAMC) substructures ──────────────────
+
+    /**
+     * Substructure tags valid inside a Family Child (FAMC) structure
+     * within an individual record.
+     *
+     * <p>An INDI-FAMC structure appears as a substructure of
+     * individual records ({@link Indi#FAMC}).
+     */
+    public static final class Famc {
+        private Famc() {}
+
+        /** Pedigree linkage type. */
+        public static final String PEDI = "PEDI";
+        /** Status of family-child link. */
+        public static final String STAT = "STAT";
+        /** Note reference. */
+        public static final String NOTE = "NOTE";
+        /** Shared note reference. */
+        public static final String SNOTE = "SNOTE";
+    }
+
+    // ─── Change Date (CHAN) substructures ────────────────────
+
+    /**
+     * Substructure tags valid inside a Change Date (CHAN) structure.
+     *
+     * <p>A CHAN structure appears as a substructure of most record types.
+     */
+    public static final class Chan {
+        private Chan() {}
+
+        /** Date of last change.
+         * @see Date */
+        public static final String DATE = "DATE";
+        /** Note reference. */
+        public static final String NOTE = "NOTE";
+        /** Shared note reference. */
+        public static final String SNOTE = "SNOTE";
+    }
+
+    // ─── Creation Date (CREA) substructures ─────────────────
+
+    /**
+     * Substructure tags valid inside a Creation Date (CREA) structure.
+     *
+     * <p>A CREA structure appears as a substructure of most record types.
+     */
+    public static final class Crea {
+        private Crea() {}
+
+        /** Creation date.
+         * @see Date */
+        public static final String DATE = "DATE";
+    }
+
+    // ─── Source Citation substructures ───────────────────────
+
+    /**
+     * Substructure tags valid inside a Source Citation (SOUR as substructure).
+     *
+     * <p>A source citation appears as a substructure of many record types
+     * and events (e.g., {@link Indi#SOUR}).
+     */
+    public static final class SourCitation {
+        private SourCitation() {}
+
+        /** Page or location within source. */
+        public static final String PAGE = "PAGE";
+        /** Source data container. */
+        public static final String DATA = "DATA";
+        /** Event type from source. */
+        public static final String EVEN = "EVEN";
+        /** Quality/certainty assessment. */
+        public static final String QUAY = "QUAY";
+        /** Note reference. */
+        public static final String NOTE = "NOTE";
+        /** Shared note reference. */
+        public static final String SNOTE = "SNOTE";
+        /** Multimedia reference. */
+        public static final String OBJE = "OBJE";
+    }
+
+    // ─── Schema (SCHMA) substructures ───────────────────────
+
+    /**
+     * Substructure tags valid inside a Schema (SCHMA) structure.
+     *
+     * <p>A SCHMA structure appears as a substructure of the
+     * header record ({@link Head#SCHMA}).
+     */
+    public static final class Schma {
+        private Schma() {}
+
+        /** Extension tag definition. */
+        public static final String TAG = "TAG";
     }
 }

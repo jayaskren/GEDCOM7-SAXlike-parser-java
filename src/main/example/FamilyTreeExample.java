@@ -19,6 +19,8 @@ public class FamilyTreeExample {
         String sex;
         String birthDate;
         String birthPlace;
+        String birthLatitude;
+        String birthLongitude;
         String deathDate;
     }
 
@@ -42,7 +44,8 @@ public class FamilyTreeExample {
         GedcomHandler handler = new GedcomHandler() {
             private String currentRecordTag;
             private String currentXref;
-            private String currentSubTag;
+            private String currentSubTag;   // level-1 tag (e.g., BIRT)
+            private String currentLevel2Tag; // level-2 tag (e.g., PLAC)
 
             @Override
             public void startDocument(GedcomHeaderInfo header) {
@@ -113,6 +116,7 @@ public class FamilyTreeExample {
                             break;
                     }
                 } else if (level == 2) {
+                    currentLevel2Tag = tag;
                     if (GedcomTag.Indi.BIRT.equals(currentSubTag)) {
                         if (GedcomTag.Indi.Birt.DATE.equals(tag)) {
                             p.birthDate = value;
@@ -122,6 +126,16 @@ public class FamilyTreeExample {
                     } else if (GedcomTag.Indi.DEAT.equals(currentSubTag)) {
                         if (GedcomTag.Indi.Deat.DATE.equals(tag)) {
                             p.deathDate = value;
+                        }
+                    }
+                } else if (level == 3) {
+                    // Use common substructure constants for depth-3 tags
+                    if (GedcomTag.Indi.BIRT.equals(currentSubTag)
+                            && GedcomTag.Plac.MAP.equals(currentLevel2Tag)) {
+                        if (GedcomTag.Map.LATI.equals(tag)) {
+                            p.birthLatitude = value;
+                        } else if (GedcomTag.Map.LONG.equals(tag)) {
+                            p.birthLongitude = value;
                         }
                     }
                 }
@@ -174,6 +188,10 @@ public class FamilyTreeExample {
             if (p.birthDate != null) {
                 sb.append(", born ").append(p.birthDate);
                 if (p.birthPlace != null) sb.append(" at ").append(p.birthPlace);
+                if (p.birthLatitude != null && p.birthLongitude != null) {
+                    sb.append(" (").append(p.birthLatitude)
+                      .append(", ").append(p.birthLongitude).append(")");
+                }
             }
             if (p.deathDate != null) sb.append(", died ").append(p.deathDate);
             System.out.println("  " + sb);
