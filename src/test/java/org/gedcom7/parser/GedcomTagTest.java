@@ -247,4 +247,195 @@ class GedcomTagTest {
         assertEquals(GedcomTag.Indi.Birt.DATE, GedcomTag.Fam.Marr.DATE);
         assertEquals("DATE", GedcomTag.Indi.Birt.DATE);
     }
+
+    // ─── Plac nested class constants ────────────────────────
+
+    @Test
+    void placSubstructureConstants() {
+        assertEquals("MAP", GedcomTag.Plac.MAP);
+        assertEquals("FORM", GedcomTag.Plac.FORM);
+        assertEquals("LANG", GedcomTag.Plac.LANG);
+        assertEquals("TRAN", GedcomTag.Plac.TRAN);
+        assertEquals("EXID", GedcomTag.Plac.EXID);
+        assertEquals("NOTE", GedcomTag.Plac.NOTE);
+        assertEquals("SNOTE", GedcomTag.Plac.SNOTE);
+        assertEquals("SOUR", GedcomTag.Plac.SOUR);
+    }
+
+    @Test
+    void placConstantsUsableInSwitch() {
+        String tag = "MAP";
+        String matched = null;
+        switch (tag) {
+            case GedcomTag.Plac.MAP: matched = "map"; break;
+            case GedcomTag.Plac.FORM: matched = "form"; break;
+        }
+        assertEquals("map", matched);
+    }
+
+    // ─── Map nested class constants ─────────────────────────
+
+    @Test
+    void mapSubstructureConstants() {
+        assertEquals("LATI", GedcomTag.Map.LATI);
+        assertEquals("LONG", GedcomTag.Map.LONG);
+    }
+
+    @Test
+    void mapConstantsUsableInSwitch() {
+        String tag = "LATI";
+        String matched = null;
+        switch (tag) {
+            case GedcomTag.Map.LATI: matched = "latitude"; break;
+            case GedcomTag.Map.LONG: matched = "longitude"; break;
+        }
+        assertEquals("latitude", matched);
+    }
+
+    // ─── Date nested class constants ────────────────────────
+
+    @Test
+    void dateSubstructureConstants() {
+        assertEquals("TIME", GedcomTag.Date.TIME);
+        assertEquals("PHRASE", GedcomTag.Date.PHRASE);
+    }
+
+    // ─── Addr nested class constants ────────────────────────
+
+    @Test
+    void addrSubstructureConstants() {
+        assertEquals("ADR1", GedcomTag.Addr.ADR1);
+        assertEquals("ADR2", GedcomTag.Addr.ADR2);
+        assertEquals("ADR3", GedcomTag.Addr.ADR3);
+        assertEquals("CITY", GedcomTag.Addr.CITY);
+        assertEquals("STAE", GedcomTag.Addr.STAE);
+        assertEquals("POST", GedcomTag.Addr.POST);
+        assertEquals("CTRY", GedcomTag.Addr.CTRY);
+    }
+
+    // ─── File nested class constants ────────────────────────
+
+    @Test
+    void fileSubstructureConstants() {
+        assertEquals("FORM", GedcomTag.File.FORM);
+        assertEquals("TITL", GedcomTag.File.TITL);
+        assertEquals("TRAN", GedcomTag.File.TRAN);
+    }
+
+    // ─── Form nested class constants ────────────────────────
+
+    @Test
+    void formSubstructureConstants() {
+        assertEquals("MEDI", GedcomTag.Form.MEDI);
+    }
+
+    // ─── Gedc nested class constants ────────────────────────
+
+    @Test
+    void gedcSubstructureConstants() {
+        assertEquals("VERS", GedcomTag.Gedc.VERS);
+    }
+
+    // ─── Name nested class constants ────────────────────────
+
+    @Test
+    void nameSubstructureConstants() {
+        assertEquals("GIVN", GedcomTag.Name.GIVN);
+        assertEquals("SURN", GedcomTag.Name.SURN);
+        assertEquals("NPFX", GedcomTag.Name.NPFX);
+        assertEquals("NSFX", GedcomTag.Name.NSFX);
+        assertEquals("SPFX", GedcomTag.Name.SPFX);
+        assertEquals("NICK", GedcomTag.Name.NICK);
+        assertEquals("TYPE", GedcomTag.Name.TYPE);
+        assertEquals("TRAN", GedcomTag.Name.TRAN);
+        assertEquals("NOTE", GedcomTag.Name.NOTE);
+        assertEquals("SNOTE", GedcomTag.Name.SNOTE);
+        assertEquals("SOUR", GedcomTag.Name.SOUR);
+    }
+
+    // ─── Refn nested class constants ────────────────────────
+
+    @Test
+    void refnSubstructureConstants() {
+        assertEquals("TYPE", GedcomTag.Refn.TYPE);
+    }
+
+    // ─── Exid nested class constants ────────────────────────
+
+    @Test
+    void exidSubstructureConstants() {
+        assertEquals("TYPE", GedcomTag.Exid.TYPE);
+    }
+
+    // ─── Asso nested class constants ────────────────────────
+
+    @Test
+    void assoSubstructureConstants() {
+        assertEquals("ROLE", GedcomTag.Asso.ROLE);
+        assertEquals("PHRASE", GedcomTag.Asso.PHRASE);
+        assertEquals("NOTE", GedcomTag.Asso.NOTE);
+        assertEquals("SNOTE", GedcomTag.Asso.SNOTE);
+        assertEquals("SOUR", GedcomTag.Asso.SOUR);
+    }
+
+    // ─── Famc nested class constants ────────────────────────
+
+    @Test
+    void famcSubstructureConstants() {
+        assertEquals("PEDI", GedcomTag.Famc.PEDI);
+        assertEquals("STAT", GedcomTag.Famc.STAT);
+        assertEquals("NOTE", GedcomTag.Famc.NOTE);
+        assertEquals("SNOTE", GedcomTag.Famc.SNOTE);
+    }
+
+    // ─── Chan nested class constants ────────────────────────
+
+    @Test
+    void chanSubstructureConstants() {
+        assertEquals("DATE", GedcomTag.Chan.DATE);
+        assertEquals("NOTE", GedcomTag.Chan.NOTE);
+        assertEquals("SNOTE", GedcomTag.Chan.SNOTE);
+    }
+
+    // ─── Crea nested class constants ────────────────────────
+
+    @Test
+    void creaSubstructureConstants() {
+        assertEquals("DATE", GedcomTag.Crea.DATE);
+    }
+
+    // ─── SourCitation nested class constants ────────────────
+
+    @Test
+    void sourCitationSubstructureConstants() {
+        assertEquals("PAGE", GedcomTag.SourCitation.PAGE);
+        assertEquals("DATA", GedcomTag.SourCitation.DATA);
+        assertEquals("EVEN", GedcomTag.SourCitation.EVEN);
+        assertEquals("QUAY", GedcomTag.SourCitation.QUAY);
+        assertEquals("NOTE", GedcomTag.SourCitation.NOTE);
+        assertEquals("SNOTE", GedcomTag.SourCitation.SNOTE);
+        assertEquals("OBJE", GedcomTag.SourCitation.OBJE);
+    }
+
+    // ─── Schma nested class constants ───────────────────────
+
+    @Test
+    void schmaSubstructureConstants() {
+        assertEquals("TAG", GedcomTag.Schma.TAG);
+    }
+
+    // ─── Cross-context common tag disambiguation ────────────
+
+    @Test
+    void formExistsInMultipleContexts() {
+        assertEquals(GedcomTag.Plac.FORM, GedcomTag.File.FORM);
+        assertEquals("FORM", GedcomTag.Plac.FORM);
+    }
+
+    @Test
+    void typeExistsInMultipleContexts() {
+        assertEquals(GedcomTag.Name.TYPE, GedcomTag.Refn.TYPE);
+        assertEquals(GedcomTag.Refn.TYPE, GedcomTag.Exid.TYPE);
+        assertEquals("TYPE", GedcomTag.Name.TYPE);
+    }
 }

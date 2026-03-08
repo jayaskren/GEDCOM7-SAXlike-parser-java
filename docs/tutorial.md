@@ -168,6 +168,7 @@ Instead of comparing tags with raw strings like `"INDI"` or `"NAME"`, use the `G
 - **Record tags:** `GedcomTag.INDI`, `GedcomTag.FAM`, `GedcomTag.SOUR`, etc.
 - **Substructure tags:** `GedcomTag.Indi.NAME`, `GedcomTag.Indi.SEX`, `GedcomTag.Fam.HUSB`, etc.
 - **Event substructure tags:** `GedcomTag.Indi.Birt.DATE`, `GedcomTag.Fam.Marr.PLAC`, etc.
+- **Common substructure tags:** `GedcomTag.Plac.MAP`, `GedcomTag.Map.LATI`, `GedcomTag.Map.LONG`, `GedcomTag.Addr.CITY`, `GedcomTag.Date.TIME`, `GedcomTag.Name.GIVN`, `GedcomTag.SourCitation.PAGE`, etc.
 - **Enumeration values:** `GedcomValue.Sex.MALE`, `GedcomValue.Role.WITNESS`, `GedcomValue.NameType.MAIDEN`, etc.
 
 All constants are `public static final String`, so they work in `switch` statements and `equals()` comparisons. The remaining examples in this tutorial use these constants.
