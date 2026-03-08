@@ -1,12 +1,12 @@
 # Architecture
 
-This document describes the internal design of the GEDCOM 7 SAX-like parser.
+This document describes the internal design of the GEDCOM SAX-like parser. The library supports both GEDCOM 7 and GEDCOM 5.5.5 for parsing, writing, and version conversion.
 
 ## Design Principles
 
 1. **Streaming** -- the parser never holds the entire file in memory. Lines are read, tokenized, and emitted one at a time.
 2. **Layered** -- each layer has a single responsibility and communicates through narrow interfaces.
-3. **Pluggable** -- version-specific behavior (encoding, payload assembly, escape handling) is isolated behind strategy interfaces. GEDCOM 5.5.x support can be added without modifying core logic.
+3. **Pluggable** -- version-specific behavior (encoding, payload assembly, escape handling) is isolated behind strategy interfaces. Both GEDCOM 7 and 5.5.5 strategies are provided, and custom strategies can be injected.
 4. **Zero dependencies** -- the library uses only the JDK.
 
 ## Layer Diagram
@@ -84,6 +84,21 @@ This package is not exported by the JPMS module. Users cannot depend on it.
 | `GedcomPersonalName` | Personal name parsed from `Given /Surname/ Suffix` format. |
 | `GedcomCoordinate` | Geographic coordinate with direction (N/S/E/W) and decimal value. |
 
+### Writer (`org.gedcom7.writer`)
+
+| Class | Role |
+|-------|------|
+| `GedcomWriter` | Writes well-formed GEDCOM output. Takes an `OutputStream` and a `GedcomWriterConfig`. Methods: `writeRecord()`, `writeStructure()`, `close()`. |
+| `GedcomWriterConfig` | Immutable configuration. Factory methods `gedcom7()`, `gedcom7Strict()`, `gedcom555()`, `gedcom555Strict()`, or use the `Builder`. Controls version, line length, CONC splitting, and `@@` escaping. |
+
+### Converter (`org.gedcom7.converter`)
+
+| Class | Role |
+|-------|------|
+| `GedcomConverter` | Static utility that converts GEDCOM files between versions 5.5.5 and 7.0. Reads with auto-detection, writes in the target format. |
+| `GedcomConverterConfig` | Immutable configuration for conversions. Factory methods `toGedcom7()` and `toGedcom555()`. |
+| `ConversionResult` | Result of a conversion: line counts, warnings, and success status. |
+
 ### Validation (`org.gedcom7.parser.validation`)
 
 | Class | Description |
@@ -102,7 +117,8 @@ When you call `reader.parse()`, the following happens:
    Read lines until the first non-HEAD level-0 record.
    Extract: version, source system, source name, source version,
             default language, SCHMA tag-to-URI mappings.
-   Build GedcomHeaderInfo. Warn if version is not 7.x.
+   Build GedcomHeaderInfo. In auto-detect mode, switch to
+   GEDCOM 5.5.5 strategies if version is 5.x.
 
 3. Fire startDocument(headerInfo)
 
@@ -158,15 +174,57 @@ Errors include context: line number (1-based), byte offset, descriptive message,
 
 ## Pluggable Strategies
 
-The three strategy interfaces allow future GEDCOM 5.5.x support without changing the core parser:
+The three strategy interfaces isolate version-specific behavior. Both GEDCOM 7 and 5.5.5 implementations are provided:
 
-| Strategy | GEDCOM 7 | Potential GEDCOM 5.5.x |
-|----------|----------|------------------------|
-| `GedcomInputDecoder` | UTF-8 only, strip BOM | ANSEL, ASCII, UTF-16 detection |
-| `PayloadAssembler` | CONT only (join with newline) | CONT + CONC (CONC joins without newline) |
-| `AtEscapeStrategy` | Leading `@@` only | All `@@` decoded to `@` |
+| Strategy | GEDCOM 7 | GEDCOM 5.5.5 |
+|----------|----------|--------------|
+| `GedcomInputDecoder` | UTF-8 only, strip BOM | BOM detection with HEAD.CHAR fallback |
+| `PayloadAssembler` | CONT only (join with newline) | CONT + CONC (`ContConcAssembler`: CONC joins without newline) |
+| `AtEscapeStrategy` | Leading `@@` only (`LeadingAtEscapeStrategy`) | All `@@` decoded to `@` (`AllAtEscapeStrategy`) |
 
-Strategies are wired through `GedcomReaderConfig`. The defaults are the GEDCOM 7 implementations. Custom strategies can be injected at construction time.
+Strategies are wired through `GedcomReaderConfig`. Use `gedcom7()`, `gedcom555()`, or `autoDetect()` factory methods. Custom strategies can also be injected at construction time.
+
+## GEDCOM 5.5.5 vs 7: Version Differences
+
+The library handles all version-specific differences automatically based on the chosen configuration. This table summarizes every behavioral difference.
+
+### Parsing
+
+| Behavior | GEDCOM 7 | GEDCOM 5.5.5 |
+|----------|----------|--------------|
+| Line continuations | CONT only (joined with newline) | CONT + CONC (CONC joins without newline) |
+| `@@` unescaping | Leading `@@` only | All `@@` occurrences |
+| Bare `@` validation | Not checked | Error if `@` is not escaped as `@@` |
+| Input encoding | UTF-8 only, strip BOM | BOM-detecting: UTF-8, UTF-16 BE, UTF-16 LE |
+| BOM requirement | Optional | Required (warning in lenient, fatal in strict) |
+| HEAD.CHAR tag | Not used | Required (warning if missing; assumes UTF-8) |
+| Xref length limit | No specific limit | 22 characters including `@` delimiters |
+| Max line length (strict) | 1,048,576 chars | 255 chars |
+
+### Writing
+
+| Behavior | GEDCOM 7 | GEDCOM 5.5.5 |
+|----------|----------|--------------|
+| `@` escaping | Leading `@` only | All `@` characters doubled |
+| CONC splitting | Never | Lines exceeding 255 chars split into CONC at level+1 |
+| HEAD.GEDC.FORM | Not emitted | `LINEAGE-LINKED` |
+| HEAD.CHAR | Not emitted | `UTF-8` |
+| Calendar date format | `JULIAN date`, `FRENCH_R` | `@#DJULIAN@ date`, `@#DFRENCH R@ date` |
+
+### Auto-Detection
+
+When using `GedcomReaderConfig.autoDetect()`, the parser reads HEAD.GEDC.VERS during the HEAD pre-scan:
+
+- **Version 7.x** -- applies GEDCOM 7 strategies (CONT only, leading `@@`)
+- **Version 5.x** -- switches to GEDCOM 5.5.5 strategies (CONT+CONC, all `@@`, BOM detection, xref length checks). If the version is not exactly 5.5.5, a warning is issued.
+
+### Conversion
+
+`GedcomConverter` handles all of the above automatically when converting between versions. Additional conversion behaviors:
+
+- HEAD record is regenerated for the target version (GEDC, FORM, CHAR)
+- SCHMA (GEDCOM 7 only) is preserved as-is when converting to 5.5.5, with a conversion warning
+- All output formatting (line length, escaping, CONC splitting, date syntax) adapts to the target version
 
 ## Module Structure
 

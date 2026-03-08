@@ -1,13 +1,16 @@
-# GEDCOM 7 SAX-like Parser for Java
+# GEDCOM SAX-like Parser for Java
 
-A streaming, event-driven parser for [GEDCOM 7.0](https://gedcom.io/specifications/FamilySearchGEDCOMv7.html) genealogy files. Inspired by SAX (Simple API for XML), the parser reads a GEDCOM file line by line and fires callbacks to your handler -- no DOM tree, no memory pressure, no runtime dependencies.
+A streaming, event-driven parser, writer, and converter for [GEDCOM 7.0](https://gedcom.io/specifications/FamilySearchGEDCOMv7.html) and GEDCOM 5.5.5 genealogy files. Inspired by SAX (Simple API for XML), the parser reads a GEDCOM file line by line and fires callbacks to your handler -- no DOM tree, no memory pressure, no runtime dependencies.
 
 ## Features
 
 - **Streaming** -- processes files of any size without loading them into memory
 - **Event-driven** -- override only the callbacks you need
 - **Zero dependencies** -- just the JDK (Java 11+)
-- **GEDCOM 7 compliant** -- UTF-8, CONT assembly, `@@` escape, SCHMA extension tags
+- **GEDCOM 7 and 5.5.5** -- full support for both versions, with auto-detection
+- **Parser** -- GEDCOM 7: UTF-8, CONT assembly, `@@` escape, SCHMA extension tags; GEDCOM 5.5.5: CONT + CONC assembly, all-`@@` escaping, BOM/CHAR detection
+- **Writer** -- generates well-formed GEDCOM 7 or 5.5.5 output with version-appropriate formatting
+- **Converter** -- converts files between GEDCOM 5.5.5 and 7.0 with automatic version-specific handling
 - **Lenient by default** -- recovers from errors; strict mode available
 - **Data type parsers** -- built-in helpers for dates, ages, names, coordinates, and more
 - **JPMS module** -- `org.gedcom7.parser`
@@ -49,11 +52,20 @@ try (var in = new java.io.FileInputStream("family.ged");
 ## Configuration
 
 ```java
-// Default: lenient mode, generous limits
+// GEDCOM 7: lenient mode, generous limits
 GedcomReaderConfig config = GedcomReaderConfig.gedcom7();
 
-// Strict: stop on first error
+// GEDCOM 7: strict mode -- stop on first error
 GedcomReaderConfig strict = GedcomReaderConfig.gedcom7Strict();
+
+// GEDCOM 5.5.5: lenient mode (CONT+CONC, all-@@ escaping)
+GedcomReaderConfig config555 = GedcomReaderConfig.gedcom555();
+
+// GEDCOM 5.5.5: strict mode
+GedcomReaderConfig strict555 = GedcomReaderConfig.gedcom555Strict();
+
+// Auto-detect: reads HEAD.GEDC.VERS and applies the right strategies
+GedcomReaderConfig auto = GedcomReaderConfig.autoDetect();
 
 // Custom: tune limits and enable structure validation
 GedcomReaderConfig custom = new GedcomReaderConfig.Builder()
