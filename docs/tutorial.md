@@ -1,6 +1,6 @@
 # Tutorial: Parsing GEDCOM Files
 
-This tutorial walks you through using the GEDCOM 7 SAX-like parser, from your first parse to building a real genealogy application. No prior GEDCOM knowledge is required.
+This tutorial walks you through using the GEDCOM SAX-like parser, from your first parse to building a real genealogy application. The library supports both GEDCOM 7 and GEDCOM 5.5.5, with auto-detection available. No prior GEDCOM knowledge is required.
 
 ## What is GEDCOM?
 
@@ -292,6 +292,36 @@ try (GedcomReader reader = new GedcomReader(in, handler, strict)) {
 }
 ```
 
+### Parsing GEDCOM 5.5.5 Files
+
+The parser also supports GEDCOM 5.5.5 files. Use a dedicated config or auto-detection:
+
+```java
+// Explicit GEDCOM 5.5.5 configuration
+GedcomReaderConfig config555 = GedcomReaderConfig.gedcom555();
+
+// Auto-detect: reads HEAD.GEDC.VERS and applies the right strategies
+GedcomReaderConfig auto = GedcomReaderConfig.autoDetect();
+```
+
+In GEDCOM 5.5.5 mode, the parser handles CONT and CONC payload assembly, decodes all `@@` sequences (not just leading ones), validates xref length limits, and checks for BOM and HEAD.CHAR encoding declarations. Your handler code does not need to change -- the same callbacks fire regardless of version.
+
+### Key Differences Between GEDCOM 5.5.5 and 7
+
+If you work with files from both versions, here are the differences that matter most:
+
+| Area | GEDCOM 5.5.5 | GEDCOM 7 |
+|------|-------------|----------|
+| Line continuations | CONT (new line) + CONC (same line) | CONT only |
+| `@` escaping | All `@` must be doubled as `@@` | Only a leading `@` is doubled |
+| Encoding | BOM required; HEAD.CHAR declares encoding | UTF-8 always; BOM optional |
+| Line length | 255 character limit | No practical limit |
+| Extension tags | No standard mechanism | SCHMA in HEAD maps `_TAG` to URIs |
+| Calendar dates | `@#DJULIAN@ 1 JAN 1700` | `JULIAN 1 JAN 1700` |
+| Header | Requires HEAD.GEDC.FORM and HEAD.CHAR | Neither required |
+
+The library handles all of these automatically -- just choose the right config. For a detailed breakdown, see the [Version Differences](architecture.md#gedcom-555-vs-7-version-differences) section in the architecture guide.
+
 ### What Gets Detected
 
 | Issue | Severity | Example |
@@ -545,14 +575,169 @@ GedcomReaderConfig secure = new GedcomReaderConfig.Builder()
         .build();
 ```
 
+## Step 11: Writing GEDCOM Files
+
+The `GedcomWriter` generates well-formed GEDCOM output. It uses typed context classes so your IDE can autocomplete the methods available for each record type.
+
+```java
+import org.gedcom7.writer.*;
+import org.gedcom7.writer.context.*;
+import java.io.FileOutputStream;
+
+public class WriteFamily {
+    public static void main(String[] args) throws Exception {
+        try (FileOutputStream out = new FileOutputStream("output.ged");
+             GedcomWriter writer = new GedcomWriter(out)) {
+
+            // HEAD is required
+            writer.head(head -> {
+                head.source("MyApp");
+            });
+
+            // Create individuals -- each returns an Xref for cross-referencing
+            Xref husband = writer.individual(indi -> {
+                indi.personalName("John", "Smith");
+                indi.sex("M");
+                indi.birth(birt -> {
+                    birt.date("6 APR 1952");
+                    birt.place("Springfield, IL, USA");
+                });
+            });
+
+            Xref wife = writer.individual(indi -> {
+                indi.personalName("Jane", "Doe");
+                indi.sex("F");
+            });
+
+            // Create a family linking the individuals
+            writer.family(fam -> {
+                fam.husband(husband);
+                fam.wife(wife);
+                fam.marriage(marr -> {
+                    marr.date("14 FEB 1975");
+                    marr.place("Chicago, IL, USA");
+                });
+            });
+
+            // TRLR is written automatically by close()
+        }
+    }
+}
+```
+
+The writer auto-generates xref IDs (like `@I1@`, `@F1@`). If you need specific IDs, pass them as the first argument:
+
+```java
+Xref john = writer.individual("I1", indi -> {
+    indi.personalName("John /Smith/");
+});
+```
+
+To write GEDCOM 5.5.5 output (with CONC line splitting, `@@` escaping, and the required FORM/CHAR header tags):
+
+```java
+GedcomWriterConfig config = GedcomWriterConfig.gedcom555();
+GedcomWriter writer = new GedcomWriter(out, config);
+```
+
+## Step 12: Converting Between GEDCOM Versions
+
+The `GedcomConverter` converts files between GEDCOM 5.5.5 and 7.0 in a single call. It handles all version-specific differences automatically -- encoding, escaping, line splitting, header tags, and date syntax.
+
+```java
+import org.gedcom7.converter.*;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+
+public class ConvertFile {
+    public static void main(String[] args) throws Exception {
+        // Convert a GEDCOM 5.5.5 file to GEDCOM 7
+        try (FileInputStream in = new FileInputStream("family-555.ged");
+             FileOutputStream out = new FileOutputStream("family-7.ged")) {
+
+            ConversionResult result = GedcomConverter.convert(
+                    in, out, GedcomConverterConfig.toGedcom7());
+
+            System.out.println("Source version: " + result.getSourceVersion());
+            System.out.println("Target version: " + result.getTargetVersion());
+            System.out.println("Records converted: " + result.getRecordCount());
+            System.out.println("Warnings: " + result.getWarningCount());
+        }
+    }
+}
+```
+
+To convert in the other direction:
+
+```java
+ConversionResult result = GedcomConverter.convert(
+        in, out, GedcomConverterConfig.toGedcom555());
+```
+
+If you need strict validation during conversion, use the strict configs:
+
+```java
+GedcomConverterConfig strict = GedcomConverterConfig.toGedcom7Strict();
+```
+
+## Step 13: Working with Gedzip Archives
+
+GEDCOM 7 defines Gedzip (`.gdz`) as a ZIP-based archive format that bundles a GEDCOM file with its referenced multimedia. The `GedzipReader` class handles these archives:
+
+```java
+import org.gedcom7.parser.*;
+import java.io.File;
+import java.io.InputStream;
+
+public class ReadGedzip {
+    public static void main(String[] args) throws Exception {
+        try (GedzipReader gdz = new GedzipReader(new File("family.gdz"))) {
+
+            // List all entries in the archive
+            System.out.println("Archive entries:");
+            for (String entry : gdz.getEntryNames()) {
+                System.out.println("  " + entry);
+            }
+
+            // Parse the main GEDCOM file
+            try (InputStream gedStream = gdz.getGedcomStream();
+                 GedcomReader reader = new GedcomReader(
+                         gedStream, new GedcomHandler() {
+                     @Override
+                     public void startRecord(int level, String xref, String tag) {
+                         System.out.println("Record: " + tag);
+                     }
+                 }, GedcomReaderConfig.gedcom7())) {
+                reader.parse();
+            }
+
+            // Access a specific file in the archive (e.g., a photo)
+            if (gdz.hasEntry("media/photo.jpg")) {
+                try (InputStream photo = gdz.getEntry("media/photo.jpg")) {
+                    // process the photo...
+                }
+            }
+        }
+    }
+}
+```
+
+The `GedzipReader.isExternalReference(path)` static method can check whether a FILE reference in a GEDCOM record points outside the archive (an absolute path or URL) versus a relative path that should be found inside the `.gdz` file.
+
 ## Summary
 
 | To do this... | ...use this |
 |---------------|-------------|
 | Parse a file | `new GedcomReader(inputStream, handler, config)` then `reader.parse()` |
+| Parse GEDCOM 5.5.5 | `GedcomReaderConfig.gedcom555()` or `.autoDetect()` |
 | Receive events | Extend `GedcomHandler`, override callbacks |
 | Configure parsing | `GedcomReaderConfig.gedcom7()`, `.gedcom7Strict()`, or `Builder` |
+| Write a GEDCOM file | `new GedcomWriter(outputStream)` with typed context lambdas |
+| Write GEDCOM 5.5.5 | `new GedcomWriter(out, GedcomWriterConfig.gedcom555())` |
+| Convert between versions | `GedcomConverter.convert(in, out, config)` |
+| Open a Gedzip archive | `new GedzipReader(file)` then `.getGedcomStream()` |
 | Compare tags | `GedcomTag.INDI`, `GedcomTag.Indi.NAME`, `GedcomTag.Indi.Birt.DATE`, etc. |
+| Common substructure tags | `GedcomTag.Plac.MAP`, `GedcomTag.Map.LATI`, `GedcomTag.Addr.CITY`, etc. |
 | Compare enum values | `GedcomValue.Sex.MALE`, `GedcomValue.Role.WITNESS`, etc. |
 | Read header metadata | Override `startDocument(GedcomHeaderInfo)` |
 | Parse date strings | `GedcomDataTypes.parseDateValue(value)` |
